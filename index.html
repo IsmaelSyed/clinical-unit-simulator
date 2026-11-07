@@ -611,10 +611,9 @@ function apiSample(){
   }
   const fn = (input, opts) => call(input, opts);
   fn.json = async (input, opts) => {
-    const {text} = await call(input, opts);
-    const t = text.replace(/^```(?:json)?\s*/,'').replace(/```\s*$/,'');
-    const a = t.indexOf('{'), b = t.lastIndexOf('}');
-    try { return JSON.parse(t.slice(a, b+1)); } catch(e){ throw {code:'parse', message:'Could not read the JSON reply', text}; }
+    const {text, truncated} = await call(input, opts);
+    try { return parseLenient(text); }
+    catch(e){ throw {code: truncated?'truncated':'parse', message: truncated ? 'Claude\'s reply was too long and got cut off.' : 'Could not read the JSON reply', text}; }
   };
   fn.limits = async () => ({images:true});
   return fn;
@@ -634,15 +633,43 @@ function getSample(){
   })();
   return _sampleP;
 }
+// Parse JSON the way models actually write it: strips code fences, text around the object,
+// line and block comments, trailing commas, and raw line breaks inside strings.
+function parseLenient(text){
+  let t = String(text||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/```\s*$/,'');
+  const a = t.indexOf('{'), b = t.lastIndexOf('}');
+  if (a<0 || b<a) throw new Error('No JSON object found');
+  t = t.slice(a, b+1);
+  try { return JSON.parse(t); } catch(_){}
+  let out='', inStr=false, esc=false;
+  for (let i=0;i<t.length;i++){
+    const c=t[i];
+    if (inStr){
+      if (esc){ out+=c; esc=false; continue; }
+      if (c==='\\'){ out+=c; esc=true; continue; }
+      if (c==='"'){ out+=c; inStr=false; continue; }
+      if (c==='\n'){ out+='\\n'; continue; } if (c==='\r') continue; if (c==='\t'){ out+='\\t'; continue; }
+      out+=c; continue;
+    }
+    if (c==='"'){ inStr=true; out+=c; continue; }
+    if (c==='/' && t[i+1]==='/'){ while(i<t.length && t[i]!=='\n') i++; out+='\n'; continue; }
+    if (c==='/' && t[i+1]==='*'){ const e=t.indexOf('*/', i+2); if (e<0) break; i=e+1; continue; }
+    out+=c;
+  }
+  out = out.replace(/,(\s*[}\]])/g, '$1');
+  return JSON.parse(out);
+}
 async function askJSON(prompt, opts={}){
   const sample = await getSample();
   if (!sample) throw {code:'unavailable', message:'Claude is not available in this view.'};
   try { return await sample.json(prompt, opts); }
   catch(e){
     if (e && (e.code==='not_granted' || e.code==='rate_limited')) throw e;
-    // one repair attempt on a parse failure
+    if (e && e.code==='truncated') throw e;
     if (e && e.text){
-      return await sample.json('Return ONLY the corrected, valid JSON for the following (fix any syntax errors, drop trailing text):\n\n'+e.text.slice(0,60000), {modelTier:'quick'});
+      try { return parseLenient(e.text); } catch(_){}
+      // one repair attempt on a parse failure, with room for the full reply
+      return await sample.json('Return ONLY the corrected, valid JSON for the following. Fix syntax errors, remove comments and trailing text, keep every field and value. No markdown.\n\n'+e.text.slice(0,80000), {modelTier:'default'});
     }
     throw e;
   }
@@ -783,7 +810,7 @@ function outlinePrompt(st, text){
 
 Base EVERYTHING on the lecture content below. Choose the unit type that best fits the lecture (e.g. cardiac step-down, med-surg, ICU, L&D, pediatrics, psych). Each patient should teach different concepts from the slides and cite which slides. Use fictional names. Use current, evidence-based practice.
 
-Return ONLY valid JSON, no commentary:
+Return ONLY valid JSON. The // notes below are instructions for you: do NOT copy them into your reply. No comments, no markdown, no trailing commas.
 {
  "lectureTitle": "short title of the lecture",
  "unit": {"name": "e.g. 4 North — Cardiac Step-Down", "specialty": "", "description": "one sentence about the unit"},
@@ -809,7 +836,7 @@ Other patients on the unit (do not duplicate): ${others}.
 
 Make the chart internally consistent and clinically realistic: vitals, labs, meds, assessment and events must agree with the diagnosis and with each other, and must test concepts in the lecture. Use US units (°F, mg/dL, mEq/L).
 
-Return ONLY valid JSON:
+Return ONLY valid JSON. The // notes below are instructions for you: do NOT copy them into your reply. No comments, no markdown, no trailing commas.
 {
  "mrn":"7-digit", "weightKg":0, "hospitalDay":1, "codeStatus":"Full Code|DNR/DNI|...", "allergies":["drug (reaction)"] or [], "isolation":"None|Contact|Droplet|Airborne|...", "attending":"Dr. fictional name, specialty",
  "hpi":"3-5 sentence history of present illness", "pmh":["..."], "socialHx":"one line",
@@ -847,7 +874,7 @@ Write exactly 3 case studies. Each follows ONE new fictional client (not one of 
 
 Each case has exactly 4 stages. Each stage gives NEW data (time passes, findings change, labs come back, the client responds or deteriorates) and asks one question about that stage. Across each case, cover the clinical judgment steps in order: recognize cues → analyze cues / prioritize hypotheses → take action → evaluate outcomes. Across all 12 questions use every skill: labs (at least 3, using the case's actual lab values), critical (at least 3), priority (at least 3), delegation (at least 2). Mix mcq and sata, with at most one order question per case.
 
-Return ONLY valid JSON:
+Return ONLY valid JSON. The // notes below are instructions for you: do NOT copy them into your reply. No comments, no markdown, no trailing commas.
 {"cases":[{"title":"short catchy title","patient":"name, age, sex, setting","presentation":"opening scenario: chief complaint, history, vitals, key findings (3-5 sentences)","stages":[{"time":"e.g. 'On arrival', '2 hours later', 'Day 2', 'Discharge'","update":"what is new at this stage, with specific data (2-4 sentences)","question":QUESTION}],"takeaway":"2-3 sentence teaching point tying the case to the slides","slideRef":"Slides x-y"}]}
 ${QSCHEMA}
 
@@ -925,7 +952,7 @@ async function buildUnit(){
         let d = null;
         for (let attempt=0; attempt<2 && !d; attempt++){
           try { d = await askJSON(patientPrompt(st, outline, b, i, text), {modelTier:'default', images: images.length?images.slice(0,6):undefined}); }
-          catch(e){ if (e && (e.code==='not_granted')) throw e; if (attempt) log(`! Room ${b.room}: ${errMsg(e)}`, 'err'); else await new Promise(r=>setTimeout(r, e&&e.code==='rate_limited'?6000:1000)); }
+          catch(e){ if (e && (e.code==='not_granted')) throw e; log(`! Room ${b.room}: ${errMsg(e)}${attempt?'':' — retrying'}`, 'err'); if (attempt) {} else await new Promise(r=>setTimeout(r, e&&e.code==='rate_limited'?6000:1000)); }
         }
         if (!d) throw new Error(`Could not chart Room ${b.room}.`);
         details[i] = d; done++; bar(Math.round(done/total*90)+5);
