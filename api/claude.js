@@ -61,7 +61,7 @@ export default async function handler(req, res) {
         'x-api-key': key,
         'anthropic-version': '2023-06-01',
       },
-      body: JSON.stringify({ model, max_tokens: tier === 'quick' ? 2000 : 12000, messages: clean }),
+      body: JSON.stringify({ model, max_tokens: tier === 'quick' ? 4000 : 24000, messages: clean }),
     });
     const data = await r.json();
     if (!r.ok) {
