@@ -1,0 +1,2001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clinical Unit Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fff5f8; --panel:#ffffff; --ink:#2d1a24; --muted:#8b6676; --line:#f6dbe6; --soft:#fff0f5;
+  --navy:#c93a74; --navy2:#a92e61;
+  --teal:#e0518a; --teal-dark:#c93a74; --teal-soft:#ffe4ef;
+  --red:#d42f4a; --red-soft:#ffe7ea; --amber:#d48a00; --amber-soft:#fff4dc; --green:#1f9a63; --green-soft:#e2f6ec;
+  --purple:#8b5cf6; --gold:#f5b301;
+  --radius:18px; --shadow:0 2px 6px rgba(201,58,116,.06),0 10px 30px rgba(201,58,116,.08);
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 'Plus Jakarta Sans',system-ui,sans-serif}
+body{background:radial-gradient(1200px 600px at 100% -10%,#ffe0ec 0%,transparent 60%),radial-gradient(900px 500px at -10% 110%,#ffeaf2 0%,transparent 60%),var(--bg);background-attachment:fixed;min-height:100vh}
+button{font:inherit;cursor:pointer}
+input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3,h4{margin:0;line-height:1.2;letter-spacing:-.01em}
+h2{font-size:26px;font-weight:800}
+.hidden{display:none!important}
+.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 18px;font-weight:600;color:var(--ink);transition:transform .12s,background .15s,border-color .15s,box-shadow .15s}
+.btn:hover{background:var(--soft);border-color:#f0bcd1;transform:translateY(-1px)}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn.primary{background:linear-gradient(135deg,#f06aa0,#d9437f);border-color:transparent;color:#fff;box-shadow:0 6px 18px rgba(217,67,127,.3)}
+.btn.primary:hover{box-shadow:0 8px 24px rgba(217,67,127,.4);background:linear-gradient(135deg,#f278aa,#d9437f)}
+.btn.danger{background:var(--red);border-color:var(--red);color:#fff}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.sm{padding:5px 12px;font-size:13px}
+.btn.big{padding:13px 26px;font-size:16px}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.pill.red{background:var(--red-soft);color:var(--red)}
+.pill.amber{background:var(--amber-soft);color:#94600a}
+.pill.green{background:var(--green-soft);color:var(--green)}
+.pill.teal{background:var(--teal-soft);color:var(--teal-dark)}
+.pill.gray{background:#f6eef2;color:var(--muted)}
+.pill.purple{background:#f1eaff;color:var(--purple)}
+
+/* top bar */
+.topbar{background:rgba(255,255,255,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);color:var(--ink);display:flex;align-items:center;gap:14px;padding:10px 22px;position:sticky;top:0;z-index:40}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.01em}
+.brand .cross{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#f472b6,#db2777);display:grid;place-items:center;box-shadow:0 4px 12px rgba(219,39,119,.35)}
+.topbar .spacer{flex:1}
+.clock{font-family:var(--mono);font-size:20px;font-weight:700;letter-spacing:1px;background:var(--teal-soft);padding:3px 12px;border-radius:10px;color:var(--teal-dark)}
+.speed{display:flex;gap:2px;background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:3px}
+.speed button{background:transparent;border:0;color:var(--muted);padding:3px 10px;border-radius:999px;font-size:12.5px;font-weight:700}
+.speed button.on{background:var(--teal);color:#fff}
+.topbar .btn{padding:6px 12px;font-size:13px}
+
+/* game HUD */
+.hud{display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px 10px 4px 4px;border-radius:999px;background:#fff;border:1px solid var(--line)}
+.hud:hover{border-color:#f0bcd1}
+.lvl{width:34px;height:34px;border-radius:50%;background:conic-gradient(var(--teal) var(--p,0%),#f8dbe7 0);display:grid;place-items:center;position:relative}
+.lvl span{width:26px;height:26px;border-radius:50%;background:#fff;display:grid;place-items:center;font-weight:800;font-size:13px;color:var(--teal-dark)}
+.hud .ttl{font-size:12px;font-weight:700;line-height:1.15}
+.hud .xp{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.streak{font-weight:800;font-size:13px;color:#ea580c;display:flex;align-items:center;gap:2px}
+.streak.cold{color:#d4b6c3}
+.badgecount{font-size:13px;font-weight:700}
+.xpfloat{position:fixed;z-index:120;pointer-events:none;font-weight:800;font-size:18px;color:var(--teal-dark);text-shadow:0 2px 0 #fff;animation:floatup 1.3s ease-out forwards}
+.xpfloat.bad{color:var(--muted);font-size:15px}
+@keyframes floatup{0%{opacity:0;transform:translate(-50%,10px) scale(.8)}15%{opacity:1;transform:translate(-50%,0) scale(1.1)}100%{opacity:0;transform:translate(-50%,-60px) scale(1)}}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:110}
+.badge-pop{position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:115;background:#fff;border:2px solid #f9c8dc;border-radius:20px;padding:12px 20px 12px 12px;display:flex;gap:12px;align-items:center;box-shadow:0 18px 50px rgba(201,58,116,.3);animation:badgein .5s cubic-bezier(.2,1.4,.4,1)}
+@keyframes badgein{from{transform:translate(-50%,-30px) scale(.7);opacity:0}to{transform:translateX(-50%);opacity:1}}
+.badge-ico{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:28px;background:linear-gradient(135deg,#ffe4ef,#fbcfe8)}
+.badge-ico.locked{filter:grayscale(1);opacity:.35}
+.badges-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.badges-grid .b{border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center;background:#fff}
+.badges-grid .b .badge-ico{margin:0 auto 6px}
+.badges-grid .b b{display:block;font-size:13.5px}
+.badges-grid .b span{font-size:12px;color:var(--muted)}
+
+.screen{max-width:1240px;margin:0 auto;padding:26px 22px 70px}
+
+/* photo banners: overlay, photo, then a gradient that shows if the photo can't load */
+.banner{border-radius:24px;min-height:190px;padding:28px 32px;display:flex;flex-direction:column;justify-content:center;background-size:cover;background-position:center;position:relative;overflow:hidden;box-shadow:var(--shadow);margin-bottom:18px}
+.banner h1{font-size:36px;font-weight:800;max-width:560px}
+.banner h2{max-width:600px}
+.banner p{max-width:540px;margin:8px 0 0}
+.banner .credit{position:absolute;right:12px;bottom:8px;font-size:10.5px;color:rgba(255,255,255,.85);text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.85);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:12.5px;font-weight:700;color:var(--teal-dark);width:max-content;margin-bottom:10px}
+
+/* upload */
+.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:22px;align-items:start}
+.drop{border:2px dashed #f0b2cb;border-radius:18px;padding:32px;text-align:center;background:linear-gradient(180deg,#fff,#fff7fa);transition:.15s}
+.drop.over{border-color:var(--teal);background:var(--teal-soft);transform:scale(1.01)}
+.drop .big{font-size:18px;font-weight:800}
+.drop .ico{font-size:40px;line-height:1;margin-bottom:6px}
+.filelist{margin:12px 0 0;padding:0;list-style:none}
+.filelist li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;margin-top:6px;background:#fff;font-size:14px}
+.field{display:flex;flex-direction:column;gap:5px;margin-top:14px}
+.field label{font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.field select,.field textarea,.field input{border:1px solid var(--line);border-radius:12px;padding:9px 12px;background:#fff}
+.field select:focus,.field textarea:focus,.field input:focus,textarea:focus{outline:2px solid #f9b4cf;border-color:transparent}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.row>.field{flex:1;min-width:150px}
+.steps{list-style:none;padding:0;margin:14px 0 0}
+.steps li{display:flex;gap:12px;padding:11px 0;border-bottom:1px dashed var(--line)}
+.steps li:last-child{border:0}
+.steps .n{flex:0 0 34px;height:34px;border-radius:12px;background:var(--teal-soft);display:grid;place-items:center;font-size:17px}
+.photo-tile{height:150px;border-radius:16px;background-size:cover;background-position:center;margin-bottom:14px}
+
+/* progress */
+.progress-wrap{max-width:660px;margin:40px auto;text-align:center}
+.bar{height:12px;background:#fbe1eb;border-radius:999px;overflow:hidden;margin:18px 0}
+.bar>div{height:100%;background:linear-gradient(90deg,#f9a8d4,#e0518a);width:0;transition:width .5s;border-radius:999px}
+.genlog{text-align:left;font-family:var(--mono);font-size:12.5px;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;max-height:240px;overflow:auto}
+.genlog .ok{color:var(--green)}
+.genlog .err{color:var(--red)}
+.heartbeat{font-size:52px;animation:beat 1s infinite}
+@keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.18)}30%{transform:scale(1)}45%{transform:scale(1.1)}}
+
+/* handoff */
+.handoff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px;margin-top:16px}
+.report{padding:18px}
+.report h3{font-size:17px;font-weight:800}
+.ptrow{display:flex;gap:12px;align-items:center}
+.avatar{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;font-weight:800;color:#fff;font-size:16px;flex:0 0 46px}
+.sbar{display:grid;grid-template-columns:26px 1fr;gap:8px 10px;margin-top:12px;font-size:14px}
+.sbar b{display:grid;place-items:center;width:26px;height:26px;border-radius:9px;background:var(--teal-soft);color:var(--teal-dark);font-size:12px}
+
+/* questionnaire game */
+.quest-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:4px}
+.stage{padding:20px}
+.stage-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.stage-h .num{width:30px;height:30px;border-radius:10px;background:linear-gradient(135deg,#f472b6,#db2777);color:#fff;display:grid;place-items:center;font-weight:800}
+.stage-h h3{font-size:17px;font-weight:800}
+.stage-h .pts{margin-left:auto}
+.emo-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.emo-row:last-child{border:0}
+.emos{display:flex;gap:4px}
+.emos button{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:20px;line-height:1;transition:transform .12s,background .12s;padding:0}
+.emos button:hover{transform:scale(1.12)}
+.emos button.on{background:var(--teal-soft);border-color:var(--teal);transform:scale(1.12)}
+.rank{display:flex;flex-direction:column;gap:8px}
+.rank-item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 12px;cursor:grab;user-select:none;transition:box-shadow .15s,transform .15s}
+.rank-item:hover{box-shadow:0 6px 18px rgba(201,58,116,.12)}
+.rank-item.dragging{opacity:.5}
+.rank-item.right{border-color:var(--green);background:var(--green-soft)}
+.rank-item.wrong{border-color:var(--red);background:var(--red-soft)}
+.rank-item .pos{width:28px;height:28px;border-radius:50%;background:var(--teal-soft);color:var(--teal-dark);display:grid;place-items:center;font-weight:800;flex:0 0 28px}
+.rank-item .info{flex:1;min-width:0}
+.rank-item .info b{font-size:14.5px}
+.rank-item .info div{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-item .arrows{display:flex;flex-direction:column;gap:2px}
+.rank-item .arrows button{border:1px solid var(--line);background:#fff;border-radius:7px;width:26px;height:20px;padding:0;font-size:11px;line-height:1}
+.flash{padding:6px 0}
+.flash .dots{display:flex;gap:6px;margin-bottom:12px}
+.flash .dots i{flex:1;height:6px;border-radius:999px;background:#fbe1eb}
+.flash .dots i.done{background:var(--teal)}
+.flash .dots i.cur{background:#f9a8d4}
+.timer{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.timer .tb{flex:1;height:6px;border-radius:999px;background:#fbe1eb;overflow:hidden}
+.timer .tb>div{height:100%;background:linear-gradient(90deg,#fcd34d,#f59e0b);transition:width 1s linear}
+.unlock{text-align:center;padding:26px}
+.timeline{position:relative;padding-left:28px}
+.timeline:before{content:"";position:absolute;left:10px;top:8px;bottom:8px;width:3px;border-radius:3px;background:linear-gradient(#f9a8d4,#fbe1eb)}
+.tl-item{position:relative;margin-bottom:16px}
+.tl-item:before{content:"";position:absolute;left:-24px;top:20px;width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--teal)}
+.tl-item.locked:before{border-color:#f0c6d7}
+.tl-item .q{margin:12px 0 0;box-shadow:none;border-style:dashed}
+.case-tile{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px dashed var(--line)}
+.case-tile .ico{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#ffe4ef,#fbcfe8);display:grid;place-items:center;font-size:22px;flex:0 0 44px}
+.unlock .big{font-size:46px}
+
+/* unit */
+.unit-layout{display:grid;grid-template-columns:1fr 330px;gap:18px;align-items:start}
+.census{display:grid;grid-template-columns:repeat(auto-fill,minmax(275px,1fr));gap:16px}
+.room{padding:0;cursor:pointer;position:relative;overflow:hidden;transition:transform .15s,box-shadow .15s}
+.room:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(201,58,116,.16)}
+.room .rimg{height:74px;background-size:cover;background-position:center;position:relative}
+.room .rimg .rno{position:absolute;left:12px;bottom:8px;background:#fff;border-radius:999px;padding:2px 10px;font-family:var(--mono);font-weight:700;font-size:12px;color:var(--teal-dark)}
+.room .rimg .acu{position:absolute;right:12px;bottom:8px;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.room .rb{padding:12px 14px 14px}
+.room .nm{font-weight:800;font-size:16px;margin:0 0 2px}
+.room .dx{font-size:13.5px;color:var(--muted);min-height:40px}
+.room .badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.room .vit{display:flex;gap:10px;font-family:var(--mono);font-size:12px;margin-top:10px;padding-top:9px;border-top:1px dashed var(--line);flex-wrap:wrap}
+.room .vit .ab{color:var(--red);font-weight:700}
+.room{border-top:0}
+.room.alerting{animation:flash 1.1s infinite}
+@keyframes flash{0%,100%{box-shadow:0 0 0 0 rgba(212,47,74,0)}50%{box-shadow:0 0 0 5px rgba(212,47,74,.45)}}
+.calllight{position:absolute;top:10px;right:10px;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid rgba(255,255,255,.7);box-shadow:0 0 0 1px var(--line)}
+.room.alerting .calllight{background:var(--red);animation:blink .6s infinite alternate}
+@keyframes blink{from{opacity:1}to{opacity:.25}}
+.side h4{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:8px;font-weight:800}
+.side .card{padding:16px;margin-bottom:14px}
+.feed{max-height:300px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.alert-item{border:1px solid var(--line);border-radius:12px;padding:9px 11px;font-size:13.5px;background:#fff}
+.alert-item.open{border-color:#f5b5bf;background:var(--red-soft)}
+.alert-item .t{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.task{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.task:last-child{border:0}
+.task .when{font-family:var(--mono);font-size:11.5px;color:var(--muted);min-width:42px;padding-top:2px}
+.task.late .when{color:var(--red);font-weight:700}
+.task .ck{width:18px;height:18px;border-radius:6px;border:2px solid #f0bcd1;flex:0 0 18px;margin-top:1px;display:grid;place-items:center;font-size:11px;color:#fff}
+.task.done .ck{background:var(--green);border-color:var(--green)}
+
+/* chart */
+.chart-head{background:linear-gradient(120deg,#ffe1ed,#fff 70%);border:1px solid var(--line);color:var(--ink);border-radius:var(--radius);padding:16px 20px;display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;box-shadow:var(--shadow)}
+.chart-head .nm{font-size:21px;font-weight:800}
+.chart-head .meta{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.chart-head .meta b{color:var(--ink);font-weight:700}
+.allergy-band{background:var(--red);color:#fff;border-radius:10px;padding:5px 12px;font-weight:800;font-size:13px}
+.tabs{display:flex;gap:4px;margin:16px 0 0;overflow-x:auto;padding:4px;background:#fff;border:1px solid var(--line);border-radius:999px;width:max-content;max-width:100%}
+.tabs button{border:0;background:transparent;padding:7px 14px;font-weight:700;color:var(--muted);border-radius:999px;white-space:nowrap;font-size:13.5px}
+.tabs button.on{color:#fff;background:var(--teal)}
+.tabs button .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:5px;vertical-align:middle}
+.tabs button.on .dot{background:#fff}
+.tabpanel{padding:18px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.box{padding:18px}
+.box h4{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:10px;font-weight:800}
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+table.t th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:9px 8px;border-bottom:1px solid var(--line);background:var(--soft)}
+table.t th:first-child{border-radius:10px 0 0 10px}table.t th:last-child{border-radius:0 10px 10px 0}
+table.t td{padding:9px 8px;border-bottom:1px dashed var(--line);vertical-align:top}
+table.t td.num{font-family:var(--mono);font-size:13px}
+.flagH,.flagL{color:var(--red);font-weight:700}
+.flagC{color:#fff;background:var(--red);padding:0 6px;border-radius:6px;font-weight:700}
+.event-banner{background:var(--red-soft);border:1px solid #f5b5bf;border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px}
+
+/* monitor stays dark like a real one */
+.monitor{background:#07090c;border-radius:20px;padding:14px;display:grid;grid-template-columns:1fr 190px;gap:10px;color:#fff;border:6px solid #2a2027;box-shadow:0 14px 36px rgba(45,26,36,.25)}
+.monitor canvas{width:100%;height:190px;display:block}
+.mvals{display:flex;flex-direction:column;gap:6px;font-family:var(--mono)}
+.mv{border-left:3px solid #333;padding:2px 8px}
+.mv .l{font-size:11px;letter-spacing:1px;opacity:.75}
+.mv .v{font-size:30px;font-weight:700;line-height:1.05}
+.mv.hr{color:#3df57a;border-color:#3df57a}.mv.sp{color:#3fd2ff;border-color:#3fd2ff}.mv.bp{color:#ff6b9a;border-color:#ff6b9a}.mv.rr{color:#ffe14d;border-color:#ffe14d}.mv.tp{color:#e3a5ff;border-color:#e3a5ff}
+.mv.alarm .v{animation:blink .5s infinite alternate}
+.mv .v small{font-size:15px}
+.rhythm-lbl{font-family:var(--mono);font-size:12px;color:#3df57a;opacity:.85}
+
+/* assessment */
+.sys{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.sys .card{padding:16px}
+.sys .finding{margin-top:8px;font-size:14px;background:var(--soft);border-radius:10px;padding:9px 11px}
+.sys .marks{display:flex;gap:6px;margin-top:10px}
+.sys .res{margin-top:8px;font-size:13px;font-weight:600}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(60,20,40,.4);backdrop-filter:blur(4px);z-index:80;display:grid;place-items:center;padding:20px;animation:fade .15s}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal{background:#fff;border-radius:24px;max-width:720px;width:100%;max-height:92vh;overflow:auto;box-shadow:0 30px 80px rgba(60,20,40,.3);animation:pop .22s cubic-bezier(.2,1.3,.4,1)}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:none;opacity:1}}
+.modal .mh{padding:16px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.modal .mh h3{font-weight:800}
+.modal .mb{padding:18px 22px}
+.modal .mf{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+.modal.urgent .mh{background:linear-gradient(135deg,#ef4444,#d42f4a);color:#fff;border-radius:24px 24px 0 0;border:0}
+.modal .eimg{height:120px;border-radius:14px;background-size:cover;background-position:center;margin-bottom:12px}
+.opt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:14px;padding:11px 13px;margin-top:8px;cursor:pointer;background:#fff;transition:border-color .12s,background .12s,transform .12s}
+.opt:hover{border-color:#f0b2cb;transform:translateX(2px)}
+.opt.sel{border-color:var(--teal);background:var(--teal-soft)}
+.opt.right{border-color:var(--green);background:var(--green-soft)}
+.opt.wrong{border-color:var(--red);background:var(--red-soft)}
+.opt input{margin-top:4px;accent-color:var(--teal)}
+.fb{margin-top:12px;padding:11px 13px;border-radius:14px;font-size:14px}
+.fb.good{background:var(--green-soft);border:1px solid #b3e2c9}
+.fb.bad{background:var(--red-soft);border:1px solid #f5b5bf}
+.fb.info{background:var(--soft);border:1px solid var(--line)}
+.check-step{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line)}
+.check-step .st{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:13px;flex:0 0 26px;font-weight:700}
+.check-step.done .st{background:var(--green);border-color:var(--green);color:#fff}
+.shake{animation:shake .35s}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* questions */
+.q{padding:20px;margin-bottom:14px}
+.q .qhead{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px}
+.q .stem{font-weight:700;font-size:15.5px}
+.ord-item{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:9px 11px;margin-top:6px;background:#fff}
+.ord-item .num{font-family:var(--mono);font-weight:700;color:var(--teal-dark);width:20px}
+.ord-item .lab{flex:1}
+.ord-item button{border:1px solid var(--line);background:#fff;border-radius:7px;width:28px;height:26px;padding:0}
+
+/* chat */
+.chat{display:flex;flex-direction:column;height:440px}
+.chat .msgs{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--soft);border-radius:14px}
+.msg{max-width:80%;padding:9px 13px;border-radius:16px;font-size:14px;white-space:pre-wrap}
+.msg.me{align-self:flex-end;background:var(--teal);color:#fff;border-bottom-right-radius:4px}
+.msg.them{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg.coach{align-self:stretch;max-width:100%;background:#f3eeff;border:1px solid #ddd0fb;font-size:13.5px;white-space:normal}
+.chat form{display:flex;gap:8px;margin-top:10px}
+.chat textarea{flex:1;border:1px solid var(--line);border-radius:14px;padding:9px 12px;resize:vertical;min-height:44px}
+
+/* debrief */
+.stars{font-size:44px;letter-spacing:4px}
+.stars .off{filter:grayscale(1);opacity:.25}
+.scoregrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:16px}
+.scorebox{padding:16px}
+.scorebox .big{font-family:var(--mono);font-size:28px;font-weight:700}
+.meter{height:8px;border-radius:999px;background:#fbe1eb;overflow:hidden;margin-top:6px}
+.meter>div{height:100%;background:var(--teal);border-radius:999px}
+.prose p{margin:0 0 10px}.prose ul{margin:0 0 10px;padding-left:20px}.prose h4{margin:12px 0 6px;font-size:15px;text-transform:none;letter-spacing:0;color:var(--ink)}
+
+.toast-wrap{position:fixed;right:18px;bottom:18px;z-index:90;display:flex;flex-direction:column;gap:8px}
+.toast{background:#fff;color:var(--ink);padding:12px 14px;border-radius:16px;box-shadow:0 14px 40px rgba(60,20,40,.22);max-width:340px;font-size:14px;border:1px solid #f5b5bf;border-left:6px solid var(--red);cursor:pointer;animation:slidein .25s}
+@keyframes slidein{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
+.notice{background:var(--amber-soft);border:1px solid #f3d48c;border-radius:14px;padding:10px 13px;font-size:14px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #f6d3e1;border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sectionhead{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap}
+.footer-credit{text-align:center;font-size:11.5px;color:var(--muted);padding:0 0 24px}
+.footer-credit a{color:var(--muted)}
+@media (max-width:900px){
+  .hero,.unit-layout,.grid2,.quest-grid{grid-template-columns:1fr}
+  .chart-head{grid-template-columns:1fr}
+  .monitor{grid-template-columns:1fr}
+  .mvals{flex-direction:row;flex-wrap:wrap}
+  .topbar{flex-wrap:wrap}
+  .banner h1{font-size:28px}
+  .hud .ttl,.hud .xp{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><div class="cross"><svg width="15" height="15" viewBox="0 0 14 14"><path d="M5 0h4v5h5v4H9v5H5V9H0V5h5z" fill="#fff"/></svg></div><span id="brandName">Clinical Unit Simulator</span></div>
+  <div class="spacer"></div>
+  <div class="hud hidden" id="hud" title="Your level, XP and badges">
+    <div class="lvl" id="lvlRing"><span id="lvlNum">1</span></div>
+    <div><div class="ttl" id="lvlTitle">Nursing Student</div><div class="xp" id="xpTxt">0 XP</div></div>
+    <span class="streak cold" id="streak">🔥0</span>
+    <span class="badgecount" id="badgeCount">🏅0</span>
+  </div>
+  <div id="simControls" class="hidden" style="display:flex;align-items:center;gap:10px">
+    <button class="btn sm" id="paceBtn" title="Switch between a live clock and a self-paced shift">⏱ Timed</button>
+    <button class="btn sm primary hidden" id="skipBtn" title="Jump the clock to the next thing that happens">⏭ Next event</button>
+    <div class="speed" id="speed">
+      <button data-s="0" title="Pause">❚❚</button>
+      <button data-s="1" class="on">1×</button>
+      <button data-s="3">3×</button>
+      <button data-s="10">10×</button>
+    </div>
+    <div class="clock" id="clock">07:00</div>
+    <button class="btn sm" id="muteBtn" title="Alarm sound">🔔</button>
+    <button class="btn sm" id="endShiftBtn">End shift</button>
+  </div>
+</header>
+<canvas id="confetti"></canvas>
+
+<!-- UPLOAD -->
+<section class="screen" id="s-upload">
+  <div class="banner" data-img="hero">
+    <span class="chip">🩺 Learn by doing</span>
+    <h1>Turn your lecture slides into a hospital unit</h1>
+    <p class="muted">Upload this week's slides and run a live shift built from them. Earn XP, unlock badges and level up from Nursing Student to Charge Nurse.</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px"><span class="pill purple">🧪 Lab values</span><span class="pill purple">🧠 Critical thinking</span><span class="pill purple">🚦 Prioritization</span><span class="pill purple">👥 Delegation</span><span class="pill purple">📂 Unfolding case studies</span></div>
+  </div>
+  <div class="hero">
+    <div class="card" style="padding:22px">
+      <div class="drop" id="drop">
+        <div class="ico">📚</div>
+        <div class="big">Drop your lecture slides here</div>
+        <div class="muted small" style="margin:4px 0 14px">PDF, PowerPoint (.pptx), Word (.docx) or text</div>
+        <label class="btn primary">Choose files<input id="fileInput" type="file" multiple accept=".pdf,.pptx,.docx,.txt,.md" hidden></label>
+      </div>
+      <ul class="filelist" id="fileList"></ul>
+      <details style="margin-top:12px">
+        <summary class="small" style="cursor:pointer;color:var(--teal-dark);font-weight:700">Or paste slide text / notes</summary>
+        <textarea id="pasteText" rows="6" style="width:100%;margin-top:8px;border:1px solid var(--line);border-radius:12px;padding:10px" placeholder="Paste lecture content here…"></textarea>
+      </details>
+      <div class="row">
+        <div class="field"><label>Learner level</label>
+          <select id="level">
+            <option value="nursing student in a med-surg clinical rotation|RN">Nursing — Med-Surg</option>
+            <option value="first-year nursing student in fundamentals|RN">Nursing — Fundamentals</option>
+            <option value="senior nursing student in critical care|RN">Nursing — Critical Care</option>
+            <option value="nursing student preparing for NCLEX-RN|RN">NCLEX-RN review</option>
+            <option value="medical student on an inpatient clerkship|intern">Medical student / intern</option>
+          </select></div>
+        <div class="field"><label>Patients</label>
+          <select id="ptCount"><option>3</option><option selected>4</option><option>5</option><option>6</option></select></div>
+        <div class="field"><label>Difficulty</label>
+          <select id="difficulty"><option value="foundational">🌱 Foundational</option><option value="moderate" selected>⚡ Moderate</option><option value="challenging">🔥 Challenging</option></select></div>
+        <div class="field"><label>Shift pace</label>
+          <select id="pace"><option value="timed" selected>⏱ Timed: live clock</option><option value="untimed">🧘 Untimed: self-paced</option></select></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;margin-top:20px;flex-wrap:wrap">
+        <button class="btn primary big" id="buildBtn" disabled>Build my unit ✨</button>
+        <span class="small muted" id="buildHint">Add slides to begin.</span>
+      </div>
+      <div id="codeWrap" class="field hidden"><label>Class access code</label><input id="accessCode" placeholder="Ask your instructor for the code"></div>
+      <div id="noClaude" class="notice hidden" style="margin-top:14px">Building a unit from slides needs Claude, and it isn't connected here. Open the page on claude.ai or set up the Vercel API key, or <a href="#" id="demoLink2">try the demo unit</a>.</div>
+      <p class="small muted" style="margin:14px 0 0">Nothing is saved between visits. <a href="#" id="demoLink" style="color:var(--teal-dark);font-weight:700">Try a demo unit</a> without slides.</p>
+    </div>
+    <div class="card" style="padding:22px">
+      <div class="photo-tile" data-img="nurseBP"></div>
+      <h3 style="font-weight:800">Your shift, level by level</h3>
+      <ol class="steps">
+        <li><span class="n">📋</span><div><b>Handoff report</b><div class="small muted">Meet your patients</div></div></li>
+        <li><span class="n">🎯</span><div><b>Shift prep challenge</b><div class="small muted">Rank, rate and beat the clock</div></div></li>
+        <li><span class="n">🚨</span><div><b>Shift 07:00–11:00</b><div class="small muted">Call lights, meds, monitors, pages. Timed or self-paced.</div></div></li>
+        <li><span class="n">📂</span><div><b>Unfolding case studies</b><div class="small muted">Follow new clients as their condition changes</div></div></li>
+        <li><span class="n">🧠</span><div><b>Boss quiz</b><div class="small muted">NCLEX-style, tied to your slides</div></div></li>
+        <li><span class="n">🏆</span><div><b>Debrief</b><div class="small muted">Stars, badges and feedback</div></div></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- GENERATING -->
+<section class="screen hidden" id="s-gen">
+  <div class="progress-wrap">
+    <div class="heartbeat">💗</div>
+    <h2 id="genTitle">Opening the unit…</h2>
+    <p class="muted" id="genSub">Reading your slides and admitting patients. This takes a minute or two.</p>
+    <div class="bar"><div id="genBar"></div></div>
+    <div class="genlog" id="genLog"></div>
+    <div id="genErr" class="hidden" style="margin-top:14px"><button class="btn" id="genBack">Back to upload</button></div>
+  </div>
+</section>
+
+<!-- HANDOFF -->
+<section class="screen hidden" id="s-handoff">
+  <div class="banner" data-img="hallway">
+    <span class="chip" id="hoUnit"></span>
+    <h2>06:45 · Bedside handoff</h2>
+    <p class="muted" id="hoSub"></p>
+  </div>
+  <div class="sectionhead">
+    <div class="card box" style="flex:1" id="hoObjectives"></div>
+  </div>
+  <div class="handoff-grid" id="hoGrid"></div>
+  <div style="text-align:center;margin-top:22px"><button class="btn primary big" id="toQuestionnaire">Start the shift prep challenge 🎯</button></div>
+</section>
+
+<!-- QUESTIONNAIRE (game) -->
+<section class="screen hidden" id="s-quest">
+  <div class="banner" data-img="laptop">
+    <span class="chip">🎯 Shift prep challenge</span>
+    <h2>Get ready for your shift</h2>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><span class="pill teal" id="qpScore">0 pts</span><button class="btn sm" id="reviewHandoff">📋 Peek at handoff</button></div>
+  </div>
+  <div class="quest-grid">
+    <div class="card stage">
+      <div class="stage-h"><span class="num">1</span><h3>How ready do you feel?</h3><span class="pts pill gray">+5 XP each</span></div>
+      <div id="likPre"></div>
+    </div>
+    <div class="card stage">
+      <div class="stage-h"><span class="num">2</span><h3>Triage: who do you see first?</h3><span class="pts pill gray" id="rankPts">Drag to rank</span></div>
+      <div class="rank" id="rank"></div>
+      <div id="rankFb"></div>
+      <button class="btn primary" style="margin-top:12px" id="rankLock">Lock in my order 🔒</button>
+    </div>
+  </div>
+  <div class="card stage" style="margin-top:18px">
+    <div class="stage-h"><span class="num">3</span><h3>Quick-fire planning round</h3><span class="pts pill gray" id="flashPill">Beat the clock for bonus XP</span></div>
+    <div id="flash"></div>
+  </div>
+  <div class="card unlock hidden" style="margin-top:18px" id="unlockCard">
+    <div class="big">🔓</div>
+    <h3 style="font-weight:800;margin:6px 0">Shift unlocked</h3>
+    <p class="muted" id="questStatus" style="margin:0 0 14px"></p>
+    <button class="btn primary big" id="startShift">Clock in 🩺</button>
+  </div>
+</section>
+
+<!-- UNIT FLOOR -->
+<section class="screen hidden" id="s-unit">
+  <div class="banner" data-img="room" style="min-height:140px">
+    <span class="chip" id="unitChip">🏥 Your assignment</span>
+    <h2 id="unitTitle"></h2>
+    <p class="muted small" id="unitDesc"></p>
+  </div>
+  <div class="unit-layout">
+    <div>
+      <div class="sectionhead" style="margin-bottom:12px">
+        <h3 style="font-weight:800">Census</h3>
+        <div class="small muted">Acuity <span class="pill green">1</span> <span class="pill teal">2</span> <span class="pill amber">3</span> <span class="pill red">4</span></div>
+      </div>
+      <div class="census" id="census"></div>
+      <div class="card box" style="margin-top:18px" id="caseCard"></div>
+    </div>
+    <aside class="side">
+      <div class="card"><h4>🚨 Alerts &amp; pages</h4><div class="feed" id="feed"></div></div>
+      <div class="card"><h4>✅ Shift quests</h4><div id="worksheet"></div></div>
+    </aside>
+  </div>
+</section>
+
+<!-- CHART -->
+<section class="screen hidden" id="s-chart">
+  <button class="btn sm" id="backToUnit" style="margin-bottom:12px">← Unit census</button>
+  <div id="chartHead"></div>
+  <div id="chartEvent"></div>
+  <div class="tabs" id="chartTabs"></div>
+  <div class="tabpanel" id="chartBody"></div>
+</section>
+
+<!-- CASE STUDY -->
+<section class="screen hidden" id="s-case">
+  <button class="btn sm" id="caseBack" style="margin-bottom:12px">← Unit census</button>
+  <div class="banner" data-img="doctor" style="min-height:150px">
+    <span class="chip" id="caseChip">📂 Case study</span>
+    <h2 id="caseTitle"></h2>
+    <p class="muted" id="casePt"></p>
+  </div>
+  <div id="caseBody"></div>
+</section>
+
+<!-- FINAL QUIZ -->
+<section class="screen hidden" id="s-final">
+  <div class="banner" data-img="stetho">
+    <span class="chip">🧠 Boss quiz</span>
+    <h2>End-of-shift quiz</h2>
+    <p class="muted">Every question comes from your slides. Keep your streak going for bonus XP.</p>
+    <div style="margin-top:10px"><span class="pill teal" id="finalProg"></span></div>
+  </div>
+  <div id="finalQs"></div>
+  <div class="card stage hidden" id="postLikWrap">
+    <div class="stage-h"><span class="num">✓</span><h3>How ready do you feel now?</h3></div>
+    <div id="likPost"></div>
+    <div style="text-align:center"><button class="btn primary big" style="margin-top:14px" id="toDebrief">See my results 🏆</button></div>
+  </div>
+</section>
+
+<!-- DEBRIEF -->
+<section class="screen hidden" id="s-debrief">
+  <div class="banner" data-img="team">
+    <span class="chip">🏆 Shift complete</span>
+    <div class="stars" id="dbStars"></div>
+    <h2 id="dbLevel"></h2>
+    <p class="muted" id="dbSub"></p>
+  </div>
+  <div class="scoregrid" id="dbScores"></div>
+  <div class="card box" style="margin-top:16px"><h4>🧩 Core skills</h4><div class="scoregrid" style="margin-top:4px" id="dbSkills"></div></div>
+  <div class="card box" style="margin-top:16px"><h4>🏅 Badges</h4><div class="badges-grid" id="dbBadges"></div></div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card box"><h4>Confidence before → after</h4><div id="dbConf"></div></div>
+    <div class="card box"><h4>Missed or incorrect</h4><div id="dbMissed" class="small"></div></div>
+  </div>
+  <div class="card box" style="margin-top:16px"><h4>💬 Instructor feedback</h4><div id="dbAI" class="prose"></div></div>
+  <div style="text-align:center;margin-top:22px"><button class="btn primary big" id="newUnit">Play again with new slides ✨</button></div>
+</section>
+
+<div class="footer-credit">Photos from <a href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a></div>
+<div class="toast-wrap" id="toasts"></div>
+<div id="modalRoot"></div>
+<script>
+/* ============================================================
+   Utilities
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const arr = v => Array.isArray(v) ? v : (v == null ? [] : [v]);
+const num = (v, d=0) => { const n = parseFloat(v); return isFinite(n) ? n : d; };
+const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const SHIFT_START = 7*60, SHIFT_LEN = 240;
+function fmt(min){ const t = Math.round(SHIFT_START + min); const h = Math.floor(((t/60)%24+24)%24), m = ((t%60)+60)%60; return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'); }
+function parseClock(s){ s = String(s||'').replace(':',''); if(!/^\d{3,4}$/.test(s)) return null; const h = parseInt(s.slice(0,-2)), m = parseInt(s.slice(-2)); return h*60+m - SHIFT_START; }
+function show(id){ document.querySelectorAll('.screen').forEach(e=>e.classList.add('hidden')); $('#'+id).classList.remove('hidden'); window.scrollTo(0,0); }
+function toast(html, onclick, key){ const d=document.createElement('div'); d.className='toast'; if(key) d.dataset.key=key; d.innerHTML=html; d.onclick=()=>{d.remove(); onclick&&onclick();}; $('#toasts').appendChild(d); setTimeout(()=>d.remove(), 9000); }
+function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+function lsSet(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+
+/* ============================================================
+   Photos (Unsplash). Each layer falls back to a pink gradient if the photo can't load.
+   ============================================================ */
+const PHOTOS = {
+  hero:'1624727828489-a1e03b79bba8', nurseBP:'1725870953863-4ad4db0acfc2', hallway:'1516841273335-e39b37888115',
+  laptop:'1576091160550-2173dba999ef', room:'1611587266737-cc128ffe2946', stetho:'1584432810601-6c7f27d2362b',
+  team:'1758575514475-2a84975db58e', doctor:'1581056771107-24ca5f033842', corridor:'1586534738560-438efdf1d205'
+};
+const photo = (k,w=1600) => `https://images.unsplash.com/photo-${PHOTOS[k]}?auto=format&fit=crop&w=${w}&q=70`;
+const FALLBACK = 'linear-gradient(135deg,#ffd3e4 0%,#fbcfe8 45%,#fde2ef 100%)';
+function bgPhoto(k, overlay, w){ return `background-image:${overlay?overlay+',':''}url('${photo(k,w)}'),${FALLBACK}`; }
+function applyPhotos(root=document){
+  root.querySelectorAll('[data-img]').forEach(el=>{
+    const isBanner = el.classList.contains('banner');
+    el.setAttribute('style', (el.getAttribute('style')||'').replace(/background-image:[^;]*;?/,'') + ';' + bgPhoto(el.dataset.img, isBanner ? 'linear-gradient(90deg,rgba(255,245,248,.97) 0%,rgba(255,245,248,.88) 42%,rgba(255,245,248,.15) 78%,rgba(255,245,248,0) 100%)' : '', isBanner?1800:900));
+  });
+}
+const AVATAR_COLORS = ['#f472b6','#e0518a','#c084fc','#fb7185','#f59e0b','#38bdf8','#34d399','#a78bfa'];
+function avatar(p){ const ini = String(p.name||'?').split(/\s+/).map(w=>w[0]).slice(0,2).join(''); const c = AVATAR_COLORS[(parseInt(p.id.slice(1))||0)%AVATAR_COLORS.length]; return `<div class="avatar" style="background:linear-gradient(135deg,${c},${c}cc)">${esc(ini)}</div>`; }
+
+/* ============================================================
+   Claude (sample capability)
+   ============================================================ */
+/* Two ways to reach Claude:
+   1. Inside claude.ai the page's `sample` capability.
+   2. On your own host (e.g. Vercel) the /api/claude function, which holds your Anthropic API key. */
+let _sampleP = null, apiInfo = null;
+const blobToB64 = b => new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(String(fr.result).split(',')[1]); fr.readAsDataURL(b); });
+function apiSample(){
+  async function call(input, opts={}){
+    const messages = typeof input==='string' ? [{role:'user',content:input}] : input;
+    const images = opts.images ? await Promise.all(opts.images.slice(0,6).map(blobToB64)) : [];
+    let code=''; try { code = sessionStorage.getItem('accessCode')||''; } catch(e){}
+    const r = await fetch('/api/claude', {method:'POST', headers:{'content-type':'application/json','x-access-code':code}, body: JSON.stringify({messages, images, tier: opts.modelTier||'default'})});
+    const j = await r.json().catch(()=>({}));
+    if (r.status===401) throw {code:'not_granted', message:'The class access code is missing or wrong.'};
+    if (r.status===429) throw {code:'rate_limited', message:'Too many requests. Wait a moment.'};
+    if (!r.ok) throw {code:'error', message:j.error||('Server error '+r.status)};
+    if (opts.onText) opts.onText({text:j.text, delta:j.text});
+    return {text:j.text, truncated:!!j.truncated};
+  }
+  const fn = (input, opts) => call(input, opts);
+  fn.json = async (input, opts) => {
+    const {text} = await call(input, opts);
+    const t = text.replace(/^```(?:json)?\s*/,'').replace(/```\s*$/,'');
+    const a = t.indexOf('{'), b = t.lastIndexOf('}');
+    try { return JSON.parse(t.slice(a, b+1)); } catch(e){ throw {code:'parse', message:'Could not read the JSON reply', text}; }
+  };
+  fn.limits = async () => ({images:true});
+  return fn;
+}
+function getSample(){
+  if (_sampleP) return _sampleP;
+  _sampleP = (async () => {
+    const apiP = fetch('/api/claude', {method:'GET'}).then(r=>r.ok?r.json():null).catch(()=>null).then(j=>{ apiInfo=j; return j; });
+    for (let i=0;i<40 && !(window.claude && window.claude.use);i++){
+      await new Promise(r=>setTimeout(r,250));
+      if (apiInfo && apiInfo.ok) break;
+    }
+    if (window.claude && window.claude.use){ try { const s = await window.claude.use('sample'); if (s) return s; } catch(e){} }
+    const j = await apiP;
+    if (j && j.ok && j.configured){ if (j.requiresCode) $('#codeWrap').classList.remove('hidden'); return apiSample(); }
+    return null;
+  })();
+  return _sampleP;
+}
+async function askJSON(prompt, opts={}){
+  const sample = await getSample();
+  if (!sample) throw {code:'unavailable', message:'Claude is not available in this view.'};
+  try { return await sample.json(prompt, opts); }
+  catch(e){
+    if (e && (e.code==='not_granted' || e.code==='rate_limited')) throw e;
+    // one repair attempt on a parse failure
+    if (e && e.text){
+      return await sample.json('Return ONLY the corrected, valid JSON for the following (fix any syntax errors, drop trailing text):\n\n'+e.text.slice(0,60000), {modelTier:'quick'});
+    }
+    throw e;
+  }
+}
+async function askText(input, opts={}){
+  const sample = await getSample();
+  if (!sample) throw {code:'unavailable', message:'Claude is not available in this view.'};
+  const r = await sample(input, Object.assign({cache:false}, opts));
+  return r.text;
+}
+function errMsg(e){
+  if (!e) return 'Something went wrong.';
+  if (e.code==='not_granted') return 'Permission to use Claude was not granted for this page.';
+  if (e.code==='rate_limited') return 'Claude is busy right now (rate limited). Wait a moment and try again.';
+  return e.message || String(e);
+}
+
+/* ============================================================
+   Slide extraction
+   ============================================================ */
+const files = []; // {name, text, images:[Blob], status}
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error('Could not load '+src)); document.head.appendChild(s); }); }
+let pdfReady=null, zipReady=null;
+function ensurePdf(){ if(!pdfReady) pdfReady=(async()=>{ await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'); await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'); window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; })(); return pdfReady; }
+function ensureZip(){ if(!zipReady) zipReady=loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'); return zipReady; }
+const decodeXml = s => s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&#(\d+);/g,(m,d)=>String.fromCharCode(d)).replace(/&amp;/g,'&');
+
+async function extractPdf(file){
+  await ensurePdf();
+  const data = new Uint8Array(await file.arrayBuffer());
+  const pdf = await pdfjsLib.getDocument({data}).promise;
+  let out = [], images = [];
+  for (let i=1;i<=pdf.numPages;i++){
+    const page = await pdf.getPage(i);
+    const tc = await page.getTextContent();
+    let line='', txt=[]; let lastY=null;
+    for (const it of tc.items){ const y = it.transform ? Math.round(it.transform[5]) : null; if (lastY!==null && y!==lastY){ txt.push(line); line=''; } line += it.str + (it.hasEOL?'\n':''); lastY=y; }
+    txt.push(line);
+    out.push(`[Slide ${i}]\n` + txt.join('\n').replace(/[ \t]+/g,' ').replace(/\n{2,}/g,'\n').trim());
+  }
+  let text = out.join('\n\n');
+  // scanned / image-only slides: render pages as images for Claude to read
+  const textChars = text.replace(/\[Slide \d+\]/g,'').replace(/\s/g,'').length;
+  if (textChars < 60*pdf.numPages*0.3){
+    const sample = await getSample();
+    let allowImg = false; try { allowImg = sample && (await sample.limits()).images; } catch(e){}
+    if (allowImg){
+      const maxPages = Math.min(pdf.numPages, 12);
+      for (let i=1;i<=maxPages;i++){
+        const page = await pdf.getPage(i); const vp = page.getViewport({scale:1.3});
+        const c = document.createElement('canvas'); c.width=vp.width; c.height=vp.height;
+        await page.render({canvasContext:c.getContext('2d'), viewport:vp}).promise;
+        images.push(await new Promise(r=>c.toBlob(r,'image/jpeg',.72)));
+      }
+    }
+  }
+  return {text, images, count: pdf.numPages, unit:'pages'};
+}
+async function extractPptx(file){
+  await ensureZip();
+  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  const pick = re => Object.keys(zip.files).filter(n=>re.test(n)).sort((a,b)=>parseInt(a.match(/(\d+)\.xml$/)[1])-parseInt(b.match(/(\d+)\.xml$/)[1]));
+  const slides = pick(/^ppt\/slides\/slide\d+\.xml$/), notes = pick(/^ppt\/notesSlides\/notesSlide\d+\.xml$/);
+  const grab = async n => { const x = await zip.file(n).async('string'); return x.split(/<\/a:p>/).map(p=>[...p.matchAll(/<a:t>([^<]*)<\/a:t>/g)].map(m=>decodeXml(m[1])).join('')).filter(Boolean).join('\n'); };
+  const out=[];
+  for (let i=0;i<slides.length;i++){
+    let t = `[Slide ${i+1}]\n` + await grab(slides[i]);
+    const nn = notes.find(n=>parseInt(n.match(/(\d+)\.xml$/)[1])===i+1);
+    if (nn){ const nt = (await grab(nn)).replace(/^\d+$/m,'').trim(); if (nt) t += '\nSpeaker notes: '+nt; }
+    out.push(t);
+  }
+  return {text: out.join('\n\n'), images:[], count: slides.length, unit:'slides'};
+}
+async function extractDocx(file){
+  await ensureZip();
+  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  const x = await zip.file('word/document.xml').async('string');
+  const text = x.split(/<\/w:p>/).map(p=>[...p.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(m=>decodeXml(m[1])).join('')).filter(Boolean).join('\n');
+  return {text, images:[], count: text.split('\n').length, unit:'paragraphs'};
+}
+async function addFiles(list){
+  for (const f of list){
+    const rec = {name:f.name, text:'', images:[], status:'reading'}; files.push(rec); renderFiles();
+    try{
+      const ext = f.name.split('.').pop().toLowerCase();
+      let r;
+      if (ext==='pdf') r = await extractPdf(f);
+      else if (ext==='pptx') r = await extractPptx(f);
+      else if (ext==='docx') r = await extractDocx(f);
+      else if (['txt','md'].includes(ext)) { const t = await f.text(); r = {text:t, images:[], count:t.length, unit:'characters'}; }
+      else throw new Error('Unsupported file type. Use PDF, PPTX, DOCX or TXT (save .ppt as .pptx first).');
+      Object.assign(rec, r);
+      const chars = r.text.replace(/\[Slide \d+\]/g,'').replace(/\s/g,'').length;
+      rec.status = chars < 40 && !r.images.length ? 'error' : 'ok';
+      rec.info = rec.status==='error' ? 'No readable text found (scanned slides need Claude image reading).' : `${r.count} ${r.unit}${r.images.length?` · ${r.images.length} page images`:''}`;
+    } catch(e){ rec.status='error'; rec.info = e.message || 'Could not read file'; }
+    renderFiles();
+  }
+}
+function renderFiles(){
+  $('#fileList').innerHTML = files.map((f,i)=>`<li><span>📄 ${esc(f.name)}</span><span class="small ${f.status==='error'?'flagH':'muted'}">${f.status==='reading'?'<span class="spinner"></span> reading…':esc(f.info)} <button class="btn ghost sm" data-rm="${i}" title="Remove">✕</button></span></li>`).join('');
+  $('#fileList').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{ files.splice(+b.dataset.rm,1); renderFiles(); });
+  updateBuild();
+}
+function slideText(){
+  let t = files.filter(f=>f.status==='ok').map(f=>`=== ${f.name} ===\n${f.text}`).join('\n\n');
+  const p = $('#pasteText').value.trim(); if (p) t += '\n\n=== Pasted notes ===\n'+p;
+  return t.slice(0, 90000);
+}
+function slideImages(){ return files.flatMap(f=>f.status==='ok'?f.images:[]).slice(0,12); }
+function updateBuild(){
+  const ok = slideText().replace(/\s/g,'').length > 80 || slideImages().length>0;
+  const busy = files.some(f=>f.status==='reading');
+  $('#buildBtn').disabled = !ok || busy || noClaude;
+  $('#buildHint').textContent = busy ? 'Reading slides…' : ok ? 'Ready.' : 'Add slides to begin.';
+}
+let noClaude = false;
+
+/* ============================================================
+   Generation
+   ============================================================ */
+const QSCHEMA = `QUESTION = {"type":"mcq"|"sata"|"order","skill":"labs"|"critical"|"priority"|"delegation","stem":"question text","options":["option", ...],"answer":[0-based indices — mcq: one index; sata: every correct index; order: ALL option indices listed in the correct sequence],"rationale":"why, teaching the concept","slideRef":"Slide N (and file name if several files)"}
+
+QUESTION RULES — every question must test APPLICATION and ANALYSIS (NCLEX "apply / analyze" level, NGN clinical judgment), never recall:
+- The stem is a short client scenario: who the client is, the setting, and specific data (vitals, lab values with units, assessment findings, what the client says, meds). 2-4 sentences.
+- Ask what the learner would DO, PRIORITIZE, ANTICIPATE, REPORT, QUESTION or CONCLUDE for THIS client — e.g. "Which action should the nurse take first?", "Which finding requires immediate follow-up?", "Which statement by the client indicates teaching was effective?", "Which order should the nurse question?"
+- Never ask for a definition, a normal range, a list or a fact on its own ("What is the normal potassium?" is NOT allowed; give a client with a potassium value and ask what to do).
+- Every option is a plausible action or interpretation a real learner might pick; wrong options are realistic mistakes, not obviously silly.
+- The rationale explains why the right answer is right for THIS client AND why each tempting wrong answer is wrong.`;
+
+function settings(){
+  const [learner, role] = $('#level').value.split('|');
+  return {learner, role, n: +$('#ptCount').value, difficulty: $('#difficulty').value};
+}
+
+function outlinePrompt(st, text){
+  return `You are an experienced clinical educator. Build the blueprint for a realistic, interactive hospital-unit simulation for a ${st.learner}. The learner plays the ${st.role} assigned to every patient for a 07:00–11:00 shift. Difficulty: ${st.difficulty}.
+
+Base EVERYTHING on the lecture content below. Choose the unit type that best fits the lecture (e.g. cardiac step-down, med-surg, ICU, L&D, pediatrics, psych). Each patient should teach different concepts from the slides and cite which slides. Use fictional names. Use current, evidence-based practice.
+
+Return ONLY valid JSON, no commentary:
+{
+ "lectureTitle": "short title of the lecture",
+ "unit": {"name": "e.g. 4 North — Cardiac Step-Down", "specialty": "", "description": "one sentence about the unit"},
+ "objectives": ["4-6 measurable learning objectives drawn from the slides"],
+ "patients": [ {"room":"4-digit or 3-digit room number","name":"fictional full name","age":0,"sex":"M|F","diagnosis":"admitting diagnosis","focus":"slide concepts this patient tests, 1-2 sentences","slideRefs":"Slides x-y","acuity":1-4} ],   // exactly ${st.n} patients, varied acuity, at least one acuity 3-4
+ "priority": {"order":["room numbers of the patients above, in the order the learner should see them first to last"],"rationale":"2-3 sentences explaining the order (ABCs, acuity, stability)"},
+ "questionnaire": [QUESTION, ...],  // exactly 4 quick pre-shift planning questions about THESE patients (mcq or sata, no free text), one per skill: labs (interpret a lab value one of these patients will have), critical (recognize cues / anticipate a complication), priority (which need or patient comes first), delegation (what can go to the LPN or UAP)
+ "priorityEvents": [ {"atMinute":70,"alert":"short pager text","scenario":"two to four things happen at once on this unit (calls, alarms, family, a lab result) — set the scene in 2-3 sentences","items":[{"text":"one competing need, naming the room"}],"answer":[indices of items from first to last],"rationale":"why this order: ABCs, Maslow, acute vs chronic, actual vs potential, safety","slideRef":""} ],  // exactly 2, with 3-4 items each, at minutes 70 and 160
+ "finalQuiz": [QUESTION, ...]  // exactly 12 NCLEX-style questions on the lecture content, 3 per skill: labs (normal ranges, interpreting abnormal and critical values, what to do about them), critical (clinical judgment: recognize cues, analyze, prioritize hypotheses, take action, evaluate outcomes), priority (which patient or action first), delegation (RN/LPN/UAP assignment). Mix: about 7 mcq, 4 sata (3-6 options, 2+ correct), 1 order (4-5 steps). Vary which option is correct.
+}
+${QSCHEMA}
+
+LECTURE CONTENT:
+${text}`;
+}
+
+function patientPrompt(st, outline, brief, idx, text){
+  const others = outline.patients.filter((_,i)=>i!==idx).map(p=>`Room ${p.room}: ${p.name}, ${p.diagnosis}`).join('; ');
+  return `You are an experienced clinical educator writing one realistic patient chart for a hospital-unit simulation on ${outline.unit.name} (${outline.unit.specialty}). Learner: ${st.learner}, acting as the ${st.role}. Difficulty: ${st.difficulty}. The shift runs 07:00–11:00.
+
+This patient: Room ${brief.room}, ${brief.name}, ${brief.age}${brief.sex}, ${brief.diagnosis}. Teaching focus: ${brief.focus} (${brief.slideRefs}). Acuity ${brief.acuity}/4.
+Other patients on the unit (do not duplicate): ${others}.
+
+Make the chart internally consistent and clinically realistic: vitals, labs, meds, assessment and events must agree with the diagnosis and with each other, and must test concepts in the lecture. Use US units (°F, mg/dL, mEq/L).
+
+Return ONLY valid JSON:
+{
+ "mrn":"7-digit", "weightKg":0, "hospitalDay":1, "codeStatus":"Full Code|DNR/DNI|...", "allergies":["drug (reaction)"] or [], "isolation":"None|Contact|Droplet|Airborne|...", "attending":"Dr. fictional name, specialty",
+ "hpi":"3-5 sentence history of present illness", "pmh":["..."], "socialHx":"one line",
+ "sbar":{"situation":"","background":"","assessment":"","recommendation":""},   // night-shift nurse's handoff report, realistic and concise
+ "vitals":[{"time":"2300","hr":0,"sbp":0,"dbp":0,"rr":0,"temp":98.6,"spo2":0,"pain":0}, {"time":"0300",...}, {"time":"0645",...}],
+ "rhythm":"NSR|Sinus Tachycardia|Sinus Bradycardia|Atrial Fibrillation|Atrial Flutter|Paced|First-degree AV block",
+ "assessment":[{"system":"Neuro|Cardiovascular|Respiratory|GI|GU|Integumentary|Musculoskeletal|Psychosocial|Pain","finding":"specific objective findings you'd document","abnormal":true|false}],  // 8 systems, mix of normal and abnormal
+ "labs":[{"name":"","value":"","unit":"","range":"","flag":"H|L|C|"}],  // 8-12 labs from this morning, C = critical. Include at least 3 abnormal values that matter for this diagnosis, and at least one that changes a nursing action (e.g. a med hold, a call to the provider). Use standard adult reference ranges and make the flag match the value and range exactly.
+ "meds":[{"name":"generic (brand)","dose":"","route":"","freq":"","due":"0800","indication":"","highAlert":true|false,"holdIf":{"param":"hr|sbp|dbp|rr|spo2|temp|lab:<exact lab name from labs>","op":"<|>","value":0} or null,"allergyConflict":true|false,"rationale":"what the ${st.role} must check before giving it and the right decision for this patient today"}],  // 4-7 meds due between 0730 and 1030. At least one has a holdIf parameter. ${st.difficulty==='foundational'?'':'Make at least one med decision tricky: either the hold parameter IS met by current vitals/labs, or the med conflicts with a listed allergy (set allergyConflict true).'}
+ "orders":["active provider orders, 6-10, e.g. diet, activity, vitals frequency, I&O, labs, PRNs, notify parameters"],
+ "notes":[{"time":"0400","author":"Night RN","text":"nursing note"}],  // 2 notes
+ "persona":"how this patient talks and behaves, what they know about their illness, what they're worried about (for role-play)",
+ "events":[ {"atMinute":30,"alert":"what the call light / pager / monitor says, short","title":"short title","description":"what you find at the bedside: symptoms, what the patient says, monitor changes","vitals":{"hr":0,"sbp":0,"dbp":0,"rr":0,"spo2":0,"temp":0} (only changed values),"rhythm":"optional new rhythm or omit","cues":{"question":"Which findings are most concerning right now? Select all that apply.","options":["5-6 findings mixing relevant cues (vitals, labs, symptoms) and distractors"],"answer":[indices of the relevant cues],"rationale":"what the cues point to"},"question":"What is your priority action?","options":[{"text":"","correct":true|false,"feedback":"why"}],"resolvedVitals":{partial vitals after the correct intervention},"slideRef":"Slide N"} ],  // exactly 3 events at different minutes between 10 and 220, escalating realism; 4 options each, exactly one correct
+ "quiz":[QUESTION, QUESTION, QUESTION]  // 3 questions about THIS patient's care, drawn from the slides: one "labs" question that uses this patient's actual lab results to decide an action, one "critical" question about a new finding in this patient, and one "priority" or "delegation" question set during this patient's shift
+}
+${QSCHEMA}
+
+LECTURE CONTENT (for reference):
+${text.slice(0, 60000)}`;
+}
+
+function normSkill(sk, stem){
+  sk = String(sk||'').toLowerCase();
+  if (/lab/.test(sk)) return 'labs'; if (/deleg/.test(sk)) return 'delegation'; if (/prior/.test(sk)) return 'priority'; if (/crit|judg|think/.test(sk)) return 'critical';
+  const t = String(stem||'').toLowerCase();
+  if (/delegat|assign|uap|lpn|lvn|assistive|aide/.test(t)) return 'delegation';
+  if (/first|priority|prioriti|most urgent|immediately/.test(t)) return 'priority';
+  if (/\blab|potassium|sodium|glucose|hemoglobin|creatinine|inr|level|mEq|mg\/dL/i.test(t)) return 'labs';
+  return 'critical';
+}
+function casePrompt(st, outline, text){
+  return `You are an experienced clinical educator writing UNFOLDING CASE STUDIES (NCLEX Next Generation style) for a ${st.learner}, acting as the ${st.role}. Difficulty: ${st.difficulty}. Base them strictly on the lecture content below.
+
+Write exactly 3 case studies. Each follows ONE new fictional client (not one of these unit patients: ${outline.patients.map(p=>p.name).join(', ')}) through time, so the situation changes and the learner has to keep re-thinking. Use different settings or phases of care across the 3 cases (e.g. emergency department, inpatient unit, discharge or clinic follow-up) and different slide concepts.
+
+Each case has exactly 4 stages. Each stage gives NEW data (time passes, findings change, labs come back, the client responds or deteriorates) and asks one question about that stage. Across each case, cover the clinical judgment steps in order: recognize cues → analyze cues / prioritize hypotheses → take action → evaluate outcomes. Across all 12 questions use every skill: labs (at least 3, using the case's actual lab values), critical (at least 3), priority (at least 3), delegation (at least 2). Mix mcq and sata, with at most one order question per case.
+
+Return ONLY valid JSON:
+{"cases":[{"title":"short catchy title","patient":"name, age, sex, setting","presentation":"opening scenario: chief complaint, history, vitals, key findings (3-5 sentences)","stages":[{"time":"e.g. 'On arrival', '2 hours later', 'Day 2', 'Discharge'","update":"what is new at this stage, with specific data (2-4 sentences)","question":QUESTION}],"takeaway":"2-3 sentence teaching point tying the case to the slides","slideRef":"Slides x-y"}]}
+${QSCHEMA}
+
+LECTURE CONTENT:
+${text.slice(0, 60000)}`;
+}
+function normQ(q){
+  q = q || {}; const options = arr(q.options).map(String);
+  let type = ['mcq','sata','order'].includes(q.type) ? q.type : 'mcq';
+  let answer = arr(q.answer).map(n=>parseInt(n)).filter(n=>n>=0 && n<options.length);
+  if (type==='order' && answer.length!==options.length) answer = options.map((_,i)=>i);
+  if (!answer.length) answer=[0];
+  if (type==='mcq') answer=[answer[0]];
+  return {type, skill:normSkill(q.skill, q.stem), stem:String(q.stem||''), options, answer, rationale:String(q.rationale||''), slideRef:String(q.slideRef||'')};
+}
+function normPatient(brief, d, i){
+  d = d || {};
+  const p = Object.assign({}, d, brief);
+  p.id = 'p'+i;
+  p.room = String(brief.room || (400+i));
+  p.acuity = Math.min(4, Math.max(1, parseInt(brief.acuity)||2));
+  p.allergies = arr(d.allergies).map(String).filter(a=>!/^(none|nkda)$/i.test(a.trim()));
+  p.pmh = arr(d.pmh).map(String);
+  p.vitals = arr(d.vitals).map(v=>({time:String(v.time||''),hr:num(v.hr,80),sbp:num(v.sbp,120),dbp:num(v.dbp,70),rr:num(v.rr,16),temp:num(v.temp,98.6),spo2:num(v.spo2,97),pain:num(v.pain,0)}));
+  if (!p.vitals.length) p.vitals=[{time:'0645',hr:80,sbp:120,dbp:70,rr:16,temp:98.6,spo2:97,pain:0}];
+  p.assessment = arr(d.assessment).map(a=>({system:String(a.system||'Other'),finding:String(a.finding||''),abnormal:!!a.abnormal}));
+  p.labs = arr(d.labs).map(l=>({name:String(l.name||''),value:String(l.value??''),unit:String(l.unit||''),range:String(l.range||''),flag:String(l.flag||'').toUpperCase().slice(0,1)}));
+  p.meds = arr(d.meds).map((m,j)=>({id:'m'+j,name:String(m.name||''),dose:String(m.dose||''),route:String(m.route||''),freq:String(m.freq||''),due:String(m.due||'0900').replace(':',''),indication:String(m.indication||''),highAlert:!!m.highAlert,holdIf:(m.holdIf&&m.holdIf.param)?m.holdIf:null,allergyConflict:!!m.allergyConflict,rationale:String(m.rationale||'')}));
+  p.orders = arr(d.orders).map(String);
+  p.notes = arr(d.notes).map(n=>({time:String(n.time||''),author:String(n.author||'RN'),text:String(n.text||'')}));
+  p.sbar = d.sbar || {};
+  p.events = arr(d.events).map((e,j)=>{
+    let options = arr(e.options).map(o=>typeof o==='string'?{text:o,correct:false,feedback:''}:{text:String(o.text||''),correct:!!o.correct,feedback:String(o.feedback||'')});
+    if (options.length && !options.some(o=>o.correct)) options[0].correct = true;
+    let cues = null;
+    if (e.cues && arr(e.cues.options).length>=3){ const co=arr(e.cues.options).map(String); const ca=arr(e.cues.answer).map(n=>parseInt(n)).filter(n=>n>=0&&n<co.length); if (ca.length) cues={question:String(e.cues.question||'Which findings are most concerning? Select all that apply.'), options:co, answer:ca, rationale:String(e.cues.rationale||'')}; }
+    return {id:p.id+'e'+j, cues, atMinute:num(e.atMinute,30), alert:String(e.alert||e.title||'Call light'), title:String(e.title||'Change in condition'), description:String(e.description||''), vitals:e.vitals||{}, rhythm:e.rhythm||null, question:String(e.question||'What is your priority action?'), options:shuffle(options), resolvedVitals:e.resolvedVitals||{}, slideRef:String(e.slideRef||'')};
+  });
+  p.quiz = arr(d.quiz).map(normQ);
+  p.rhythm = d.rhythm || 'NSR';
+  p.codeStatus = d.codeStatus || 'Full Code';
+  p.isolation = d.isolation || 'None';
+  return p;
+}
+function spaceEvents(unit){
+  const all = unit.patients.flatMap(p=>p.events).sort((a,b)=>a.atMinute-b.atMinute);
+  const n = all.length; if (!n) return;
+  all.forEach((e,i)=>{ e.atMinute = Math.round(12 + (i+0.5)*(215/n) + (Math.random()*6-3)); });
+}
+
+async function buildUnit(){
+  const st = settings(); const text = slideText(); const images = slideImages();
+  show('s-gen'); $('#genErr').classList.add('hidden'); $('#genLog').innerHTML='';
+  const log = (m, cls='') => { const d=document.createElement('div'); d.className=cls; d.textContent=m; $('#genLog').appendChild(d); $('#genLog').scrollTop=1e9; };
+  const bar = p => $('#genBar').style.width = p+'%';
+  const total = st.n + 2; let done = 0;
+  try{
+    log('Reading lecture content ('+Math.round(text.length/1000)+'k characters'+(images.length?`, ${images.length} slide images`:'')+')…');
+    bar(4);
+    let chars=0; const t0=Date.now(); clearInterval(window._genEl); window._genEl=setInterval(()=>{ if(!chars) $('#genSub').textContent=`Designing the unit… ${Math.round((Date.now()-t0)/1000)}s`; },1000);
+    const outline = await askJSON(outlinePrompt(st, text || '(Slides are attached as images.)'), {modelTier:'default', images: images.length?images:undefined, onText:({text})=>{ chars=text.length; $('#genSub').textContent=`Designing the unit… (${(chars/1000).toFixed(1)}k)`; }});
+    clearInterval(window._genEl);
+    if (!outline || !arr(outline.patients).length) throw new Error('The unit blueprint came back empty. Try again, or add more slide content.');
+    outline.unit = outline.unit || {name:'Inpatient Unit',specialty:'',description:''};
+    outline.patients = arr(outline.patients).slice(0, st.n);
+    done++; bar(Math.round(done/total*90)+5);
+    log(`✓ ${outline.unit.name}: ${outline.patients.length} patients planned`, 'ok');
+    $('#genTitle').textContent = 'Admitting patients to '+outline.unit.name;
+    const details = new Array(outline.patients.length);
+    let next = 0;
+    async function worker(){
+      while (next < outline.patients.length){
+        const i = next++; const b = outline.patients[i];
+        log(`… Room ${b.room}: charting ${b.name} (${b.diagnosis})`);
+        let d = null;
+        for (let attempt=0; attempt<2 && !d; attempt++){
+          try { d = await askJSON(patientPrompt(st, outline, b, i, text), {modelTier:'default', images: images.length?images.slice(0,6):undefined}); }
+          catch(e){ if (e && (e.code==='not_granted')) throw e; if (attempt) log(`! Room ${b.room}: ${errMsg(e)}`, 'err'); else await new Promise(r=>setTimeout(r, e&&e.code==='rate_limited'?6000:1000)); }
+        }
+        if (!d) throw new Error(`Could not chart Room ${b.room}.`);
+        details[i] = d; done++; bar(Math.round(done/total*90)+5);
+        log(`✓ Room ${b.room}: ${b.name} admitted`, 'ok');
+      }
+    }
+    let cases = [];
+    const caseJob = (async()=>{
+      log('… Writing unfolding case studies');
+      for (let attempt=0; attempt<2; attempt++){
+        try { const r = await askJSON(casePrompt(st, outline, text), {modelTier:'default'}); cases = arr(r && r.cases); if (cases.length){ log(`✓ ${cases.length} case studies ready`, 'ok'); break; } }
+        catch(e){ if (e && e.code==='not_granted') throw e; if (attempt) log('! Case studies skipped: '+errMsg(e), 'err'); else await new Promise(r=>setTimeout(r, e&&e.code==='rate_limited'?6000:1000)); }
+      }
+      done++; bar(Math.round(done/total*90)+5);
+    })();
+    await Promise.all([worker(), worker(), caseJob]);
+    const unit = {
+      lectureTitle: outline.lectureTitle || 'Lecture', unit: outline.unit, objectives: arr(outline.objectives).map(String),
+      questionnaire: arr(outline.questionnaire).map(normQ).filter(q=>q.options.length>=2),
+      priority: outline.priority,
+      cases: cases, priorityEvents: outline.priorityEvents,
+      finalQuiz: arr(outline.finalQuiz).map(normQ),
+      patients: outline.patients.map((b,i)=>normPatient(b, details[i], i)),
+      settings: st, fromSlides: true
+    };
+    spaceEvents(unit);
+    bar(100); log('✓ Unit ready. Report is at 06:45.', 'ok');
+    setTimeout(()=>startWithUnit(unit), 500);
+  } catch(e){
+    clearInterval(window._genEl); log('✕ '+errMsg(e), 'err'); $('#genTitle').textContent='The unit could not be built'; $('#genSub').textContent=errMsg(e); $('#genErr').classList.remove('hidden');
+  }
+}
+
+/* ============================================================
+   State
+   ============================================================ */
+let U = null;   // unit
+let S = null;   // sim state
+function newState(unit){
+  const pts = {};
+  unit.patients.forEach(p=>{
+    const last = p.vitals[p.vitals.length-1];
+    pts[p.id] = { cur:{...last}, rhythm:p.rhythm, vitalsLog:[], assessed:{}, marks:{}, meds:{}, events:{}, firedEvents:[], quiz:{}, chats:{patient:[],provider:[]}, myNotes:[], lastVitalsMin:null };
+  });
+  return { min:0, speed:1, running:false, muted:false, pts, earned:{events:0,meds:0,assess:0,comm:0,quizPt:0,quizFinal:0,quest:0,labs:0,cases:0,prio:0}, possibleComm:0, questScoreMax:0, log:[],
+    pre:{conf:[],answers:{},rank:null,ranked:false}, post:{conf:[]}, finalAnswers:{}, ended:false, current:null, tab:'summary',
+    timed: ($('#pace')?.value || 'timed') === 'timed',
+    xp:0, streak:0, bestStreak:0, badges:{}, medsCorrect:0,
+    skills:{labs:{e:0,p:0}, critical:{e:0,p:0}, priority:{e:0,p:0}, delegation:{e:0,p:0}}, cases:{}, prio:{}, labCalls:{} };
+}
+// Skill tracking: every graded item feeds one of the four skills shown in the debrief
+const SKILLS = {labs:{ico:'🧪',name:'Lab values'}, critical:{ico:'🧠',name:'Critical thinking'}, priority:{ico:'🚦',name:'Prioritization'}, delegation:{ico:'👥',name:'Delegation'}};
+function skill(name, earned, possible=1){ const k = SKILLS[name] ? name : 'critical'; S.skills[k].e += earned; S.skills[k].p += possible; }
+function skillPill(name){ const k=SKILLS[name]; return k?`<span class="pill purple">${k.ico} ${k.name}</span>`:''; }
+function logAct(text){ S.log.push(`${fmt(S.min)} ${text}`); }
+function totalScore(){ return Object.values(S.earned).reduce((a,b)=>a+b,0); }
+function refreshScore(){ updateHud(); }
+
+/* ============================================================
+   Game layer: XP, levels, streaks, badges, confetti
+   ============================================================ */
+// Level titles follow Benner's novice-to-expert stages
+const LEVELS = [[0,'Nursing Student'],[120,'Novice Nurse'],[300,'Advanced Beginner'],[550,'Competent Nurse'],[850,'Proficient Nurse'],[1200,'Expert Nurse'],[1600,'Charge Nurse']];
+const BADGES = [
+  {id:'prepped', ico:'🎯', name:'Triage Ace', desc:'Ranked the patients perfectly'},
+  {id:'rapid', ico:'⚡', name:'Rapid Responder', desc:'Handled an alert correctly within 5 min'},
+  {id:'safety', ico:'🛡️', name:'Safety Net', desc:'Caught a dose that had to be held'},
+  {id:'medpro', ico:'💊', name:'Med Pass Pro', desc:'5 safe medication decisions'},
+  {id:'headtoe', ico:'🩺', name:'Head-to-Toe', desc:'A full, accurate assessment on one patient'},
+  {id:'vitals', ico:'💓', name:'Vital Signs', desc:'Took vitals on every patient'},
+  {id:'onfire', ico:'🔥', name:'On Fire', desc:'5 correct answers in a row'},
+  {id:'quizwhiz', ico:'🧠', name:'Quiz Whiz', desc:'Aced a patient quiz'},
+  {id:'sbar', ico:'📞', name:'Clear Communicator', desc:'Scored 7+/8 on an SBAR page'},
+  {id:'boss', ico:'👑', name:'Boss Slayer', desc:'80%+ on the end-of-shift quiz'},
+  {id:'labdet', ico:'🧪', name:'Lab Detective', desc:'Read every lab correctly for one patient'},
+  {id:'casecrack', ico:'📂', name:'Case Cracker', desc:'Solved every stage of a case study'},
+  {id:'juggler', ico:'🚦', name:'Juggler', desc:'Put a priority call in perfect order'}
+];
+function levelOf(xp){ let i=0; while(i+1<LEVELS.length && xp>=LEVELS[i+1][0]) i++; return i; }
+function updateHud(){
+  if (!S) return;
+  const i = levelOf(S.xp), lo = LEVELS[i][0], hi = LEVELS[i+1] ? LEVELS[i+1][0] : null;
+  $('#lvlNum').textContent = i+1; $('#lvlTitle').textContent = LEVELS[i][1];
+  $('#xpTxt').textContent = hi ? `${S.xp} / ${hi} XP` : `${S.xp} XP · max level`;
+  $('#lvlRing').style.setProperty('--p', (hi ? Math.round((S.xp-lo)/(hi-lo)*100) : 100)+'%');
+  $('#streak').textContent = '🔥'+S.streak; $('#streak').classList.toggle('cold', S.streak<2);
+  $('#badgeCount').textContent = '🏅'+Object.keys(S.badges).length;
+}
+let lastPt = {x: innerWidth/2, y: 120};
+document.addEventListener('pointerdown', e=>{ lastPt = {x:e.clientX, y:e.clientY}; }, true);
+function floatText(txt, bad){ const d=document.createElement('div'); d.className='xpfloat'+(bad?' bad':''); d.textContent=txt; d.style.left=lastPt.x+'px'; d.style.top=(lastPt.y-20)+'px'; document.body.appendChild(d); setTimeout(()=>d.remove(),1400); }
+function addXP(n, label){
+  if (!n) return; const before = levelOf(S.xp); S.xp += n; floatText(`+${n} XP${label?' · '+label:''}`);
+  const after = levelOf(S.xp);
+  if (after > before){ confetti(140); toastGood(`<b>Level up!</b> You're now a <b>${LEVELS[after][1]}</b> 🎉`); }
+  updateHud();
+}
+// cat: score category or null · pts: score points · ok: true/false/undefined for streaks
+function award(cat, pts, {ok, xp, label}={}){
+  if (cat) S.earned[cat] += pts;
+  const gain = xp ?? Math.round(pts*10);
+  if (ok===true){ S.streak++; S.bestStreak=Math.max(S.bestStreak,S.streak); if (S.streak>=5) unlock('onfire'); }
+  else if (ok===false){ if (S.streak>=3) floatText('Streak lost', true); else floatText('No XP', true); S.streak=0; }
+  let bonus = (ok===true && S.streak>0 && S.streak%3===0) ? 15 : 0;
+  addXP(gain + bonus, bonus ? `🔥 ${S.streak} streak` : label);
+  if (ok===true && gain>=20) confetti(40);
+  updateHud();
+}
+function unlock(id){
+  if (!S || S.badges[id]) return; const b = BADGES.find(x=>x.id===id); if (!b) return;
+  S.badges[id] = S.min; logAct(`Badge earned: ${b.name}`);
+  const d=document.createElement('div'); d.className='badge-pop'; d.innerHTML=`<div class="badge-ico">${b.ico}</div><div><div class="small muted" style="font-weight:700">BADGE UNLOCKED · +25 XP</div><b style="font-size:16px">${esc(b.name)}</b><div class="small muted">${esc(b.desc)}</div></div>`;
+  document.body.appendChild(d); setTimeout(()=>d.remove(), 3200);
+  confetti(90); S.xp += 25; updateHud();
+}
+function toastGood(html){ const d=document.createElement('div'); d.className='toast'; d.style.borderLeftColor='var(--teal)'; d.style.borderColor='#f9c8dc'; d.innerHTML=html; $('#toasts').appendChild(d); setTimeout(()=>d.remove(),5000); d.onclick=()=>d.remove(); }
+function showBadges(){
+  modal('Your badges', `<div style="display:flex;gap:16px;align-items:center;margin-bottom:14px"><div class="lvl" style="--p:${$('#lvlRing').style.getPropertyValue('--p')};width:56px;height:56px"><span style="width:44px;height:44px;font-size:18px">${levelOf(S.xp)+1}</span></div><div><b style="font-size:17px">${LEVELS[levelOf(S.xp)][1]}</b><div class="small muted">${S.xp} XP · best streak ${S.bestStreak}</div></div></div><div class="badges-grid">${badgeTiles()}</div>`, [{label:'Close', primary:true}]);
+}
+function badgeTiles(){ return BADGES.map(b=>`<div class="b"><div class="badge-ico ${S.badges[b.id]==null?'locked':''}">${b.ico}</div><b>${esc(b.name)}</b><span>${esc(b.desc)}</span></div>`).join(''); }
+// lightweight confetti
+let confettiParts = [], confettiRAF = null;
+function confetti(n=80){
+  const cv=$('#confetti'), ctx=cv.getContext('2d'); cv.width=innerWidth; cv.height=innerHeight;
+  const cols=['#f472b6','#e0518a','#fbcfe8','#c084fc','#fcd34d','#34d399','#fb7185'];
+  for(let i=0;i<n;i++) confettiParts.push({x:lastPt.x, y:lastPt.y, vx:(Math.random()-.5)*12, vy:-Math.random()*11-3, r:Math.random()*6+3, c:cols[i%cols.length], a:Math.random()*6, va:(Math.random()-.5)*.3, life:0});
+  if (confettiRAF) return;
+  const step=()=>{ ctx.clearRect(0,0,cv.width,cv.height);
+    confettiParts.forEach(p=>{ p.vy+=.35; p.x+=p.vx; p.y+=p.vy; p.vx*=.99; p.a+=p.va; p.life++; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.a); ctx.fillStyle=p.c; ctx.fillRect(-p.r/2,-p.r/4,p.r,p.r/2); ctx.restore(); });
+    confettiParts = confettiParts.filter(p=>p.y<cv.height+20 && p.life<240);
+    if (confettiParts.length) confettiRAF=requestAnimationFrame(step); else { confettiRAF=null; ctx.clearRect(0,0,cv.width,cv.height); } };
+  confettiRAF=requestAnimationFrame(step);
+}
+
+function startWithUnit(unit){
+  const rooms = unit.patients.map(p=>p.room);
+  let order = arr(unit.priority && unit.priority.order).map(String).filter(r=>rooms.includes(r));
+  if (order.length!==rooms.length || new Set(order).size!==rooms.length) order = [...unit.patients].sort((a,b)=>b.acuity-a.acuity).map(p=>p.room);
+  unit.priority = {order, rationale: String(unit.priority && unit.priority.rationale || 'See the least stable patient first: airway, breathing and circulation problems come before stable or routine needs.')};
+  unit.cases = arr(unit.cases).map((c,i)=>({id:'c'+i, title:String(c.title||'Case study '+(i+1)), patient:String(c.patient||''), presentation:String(c.presentation||''),
+    stages: arr(c.stages).map(st=>({time:String(st.time||''), update:String(st.update||''), question:normQ(st.question)})).filter(st=>st.question.options.length>=2),
+    takeaway:String(c.takeaway||''), slideRef:String(c.slideRef||'')})).filter(c=>c.stages.length);
+  unit.priorityEvents = arr(unit.priorityEvents).map((e,i)=>{ const items=arr(e.items).map(x=>String(typeof x==='string'?x:(x.text||''))).filter(Boolean); let ans=arr(e.answer).map(n=>parseInt(n)).filter(n=>n>=0&&n<items.length); if(ans.length!==items.length||new Set(ans).size!==items.length) ans=items.map((_,k)=>k);
+    return {id:'pe'+i, atMinute:num(e.atMinute, i?160:70), alert:String(e.alert||'Several things at once'), scenario:String(e.scenario||''), items, answer:ans, rationale:String(e.rationale||''), slideRef:String(e.slideRef||'')}; }).filter(e=>e.items.length>=2);
+  U = unit; S = newState(unit);
+  updateHud(); $('#hud').classList.remove('hidden');
+  $('#brandName').textContent = unit.unit.name;
+  renderHandoff(); show('s-handoff');
+}
+
+/* ============================================================
+   Handoff
+   ============================================================ */
+function codeClass(c){ return /dnr|dni|comfort/i.test(c)?'purple':'gray'; }
+function renderHandoff(){
+  $('#hoUnit').textContent = '🏥 ' + U.unit.name + (U.lectureTitle ? ' · '+U.lectureTitle : '');
+  $('#hoSub').textContent = `Night shift is handing off ${U.patients.length} patients to you. Read each report; the details matter later.`;
+  $('#hoObjectives').innerHTML = `<h4>Today's learning objectives</h4><ul style="margin:0;padding-left:20px">${U.objectives.map(o=>`<li>${esc(o)}</li>`).join('')}</ul>`;
+  $('#hoGrid').innerHTML = U.patients.map(p=>{
+    const v = p.vitals[p.vitals.length-1];
+    return `<div class="card report">
+      <div style="display:flex;justify-content:space-between;gap:8px"><div class="ptrow">${avatar(p)}<div><span class="mono muted small">RM ${esc(p.room)}</span><h3>${esc(p.name)}, ${esc(p.age)}${esc(p.sex)}</h3><div class="small muted">${esc(p.diagnosis)} · Day ${esc(p.hospitalDay||1)}</div></div></div>
+      <div style="text-align:right"><span class="pill ${['','green','teal','amber','red'][p.acuity]}">Acuity ${p.acuity}</span><br><span class="pill ${codeClass(p.codeStatus)}" style="margin-top:4px">${esc(p.codeStatus)}</span></div></div>
+      ${p.allergies.length?`<div style="margin-top:8px"><span class="pill red">Allergies: ${esc(p.allergies.join(', '))}</span></div>`:'<div style="margin-top:8px"><span class="pill gray">NKDA</span></div>'}
+      <div class="sbar">
+        <b>S</b><div>${esc(p.sbar.situation)}</div>
+        <b>B</b><div>${esc(p.sbar.background)}</div>
+        <b>A</b><div>${esc(p.sbar.assessment)}</div>
+        <b>R</b><div>${esc(p.sbar.recommendation)}</div>
+      </div>
+      <div class="mono small muted" style="margin-top:10px;border-top:1px dashed var(--line);padding-top:8px">0645 · HR ${v.hr} · BP ${v.sbp}/${v.dbp} · RR ${v.rr} · SpO₂ ${v.spo2}% · T ${v.temp}°F · Pain ${v.pain}/10</div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   Shift prep challenge (pre-shift questionnaire as a game)
+   ============================================================ */
+const EMOS = ['😰','😟','😐','🙂','😎'];
+function emojiRows(container, store){
+  container.innerHTML = U.objectives.map((o,i)=>`<div class="emo-row"><span>${esc(o)}</span><div class="emos">${EMOS.map((e,v)=>`<button type="button" data-i="${i}" data-v="${v+1}" class="${store.conf[i]===v+1?'on':''}" title="${['Not at all','A little','Somewhat','Mostly','Very'][v]} confident">${e}</button>`).join('')}</div></div>`).join('');
+  container.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i, first = store.conf[i]==null; store.conf[i]=+b.dataset.v;
+    if (first) addXP(5);
+    emojiRows(container, store); checkPrepDone();
+  });
+}
+function renderQuestionnaire(){
+  S.questScoreMax = U.patients.length + U.questionnaire.length;
+  emojiRows($('#likPre'), S.pre);
+  $('#flashPill').textContent = S.timed ? 'Beat the clock for bonus XP' : 'Self-paced: take your time';
+  if (!S.pre.rank) S.pre.rank = shuffle(U.patients.map(p=>p.room));
+  renderRank(); renderFlash(); updatePrepScore(); checkPrepDone();
+}
+function updatePrepScore(){ $('#qpScore').textContent = `${S.earned.quest} / ${S.questScoreMax} pts`; }
+function renderRank(){
+  const order = S.pre.rank, correct = U.priority.order, locked = S.pre.ranked;
+  $('#rank').innerHTML = order.map((room,pos)=>{ const p = U.patients.find(x=>x.room===room); const v=p.vitals[p.vitals.length-1];
+    return `<div class="rank-item ${locked?(correct[pos]===room?'right':'wrong'):''}" draggable="${!locked}" data-pos="${pos}">
+      <span class="pos">${pos+1}</span>${avatar(p)}
+      <div class="info"><b>${esc(p.name)}</b> <span class="mono small muted">Rm ${esc(p.room)}</span><div>${esc(p.diagnosis)}</div><div class="mono">HR ${v.hr} · BP ${v.sbp}/${v.dbp} · SpO₂ ${v.spo2}% · RR ${v.rr}</div></div>
+      ${locked?(correct[pos]===room?'✅':`<span class="small muted">#${correct.indexOf(room)+1}</span>`):`<div class="arrows"><button data-up="${pos}" type="button">▲</button><button data-dn="${pos}" type="button">▼</button></div>`}</div>`; }).join('');
+  $('#rankLock').classList.toggle('hidden', locked);
+  if (locked) return;
+  const move=(a,b)=>{ if(b<0||b>=order.length) return; const [x]=order.splice(a,1); order.splice(b,0,x); renderRank(); };
+  $('#rank').querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>move(+b.dataset.up, +b.dataset.up-1));
+  $('#rank').querySelectorAll('[data-dn]').forEach(b=>b.onclick=()=>move(+b.dataset.dn, +b.dataset.dn+1));
+  let from=null;
+  $('#rank').querySelectorAll('.rank-item').forEach(el=>{
+    el.ondragstart=e=>{ from=+el.dataset.pos; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; try{e.dataTransfer.setData('text/plain','x');}catch(_){} };
+    el.ondragend=()=>el.classList.remove('dragging');
+    el.ondragover=e=>e.preventDefault();
+    el.ondrop=e=>{ e.preventDefault(); if(from!=null) move(from, +el.dataset.pos); from=null; };
+  });
+}
+function lockRank(){
+  S.pre.ranked = true;
+  const correct = U.priority.order; const hits = S.pre.rank.filter((r,i)=>correct[i]===r).length; const perfect = hits===correct.length;
+  award('quest', hits, {ok:perfect, xp: hits*15}); skill('priority', hits, correct.length);
+  if (perfect) unlock('prepped');
+  logAct(`Triage ranking: ${S.pre.rank.join(' > ')} (${hits}/${correct.length} in the right place)`);
+  $('#rankPts').textContent = `${hits}/${correct.length} correct`;
+  $('#rankFb').innerHTML = `<div class="fb ${perfect?'good':'info'}"><b>${perfect?'Perfect triage!':'Best order: '+correct.map(r=>'Rm '+r).join(' → ')}</b><div style="margin-top:4px">${esc(U.priority.rationale)}</div></div>`;
+  renderRank(); updatePrepScore(); checkPrepDone();
+}
+let flashTimer = null;
+function renderFlash(){
+  clearInterval(flashTimer);
+  const qs = U.questionnaire, n = qs.length;
+  const idx = Object.keys(S.pre.answers).length;
+  const cur = Math.min(S.pre.viewing ?? idx, n-1);
+  if (!n){ $('#flash').innerHTML = '<div class="small muted">No planning questions this time.</div>'; return; }
+  const dots = qs.map((_,i)=>`<i class="${S.pre.answers[i]?'done':i===cur?'cur':''}"></i>`).join('');
+  const answered = S.pre.answers[cur];
+  $('#flash').innerHTML = `<div class="flash"><div class="dots">${dots}</div>
+    ${answered||!S.timed?'':`<div class="timer"><span>⏱</span><div class="tb"><div id="tbar" style="width:100%"></div></div><span id="tleft">30s</span></div>`}
+    <div id="flashQ" style="margin-top:10px"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px">${answered && cur<n-1?'<button class="btn primary" id="flashNext">Next question ›</button>':''}</div></div>`;
+  let left = 30;
+  if (!answered && S.timed){
+    flashTimer = setInterval(()=>{ left--; const tb=$('#tbar'); if(!tb){clearInterval(flashTimer);return;} tb.style.width=Math.max(0,left/30*100)+'%'; $('#tleft').textContent = left>0?left+'s':'No bonus'; if(left<=0) clearInterval(flashTimer); },1000);
+  }
+  renderQuestion(qs[cur], cur, $('#flashQ'), answered, res=>{
+    clearInterval(flashTimer);
+    S.pre.answers[cur] = res; S.pre.viewing = cur; skill(qs[cur].skill, res.correct?1:0);
+    award('quest', res.correct?1:0, {ok:res.correct, xp: res.correct ? (S.timed ? 20 + (left>0?10:0) : 25) : 0, label: res.correct && S.timed && left>0 ? '⏱ speed bonus' : ''});
+    logAct(`Prep question ${cur+1}: ${res.correct?'correct':'incorrect'}`);
+    updatePrepScore(); renderFlash(); checkPrepDone();
+  });
+  const nx = $('#flashNext'); if (nx) nx.onclick = ()=>{ S.pre.viewing = cur+1; renderFlash(); };
+}
+function checkPrepDone(){
+  const done = S.pre.conf.filter(v=>v!=null).length===U.objectives.length && S.pre.ranked && Object.keys(S.pre.answers).length===U.questionnaire.length;
+  const card = $('#unlockCard');
+  if (done && card.classList.contains('hidden')){
+    card.classList.remove('hidden');
+    $('#questStatus').textContent = `Prep score ${S.earned.quest}/${S.questScoreMax}. You're cleared to clock in.`;
+    confetti(60); card.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+}
+
+/* ============================================================
+   Sim clock & events
+   ============================================================ */
+let tickTimer = null, audioCtx = null;
+function beep(){
+  if (S.muted) return;
+  try{ audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    [0,0.22].forEach(off=>{ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.frequency.value=880; o.type='sine'; g.gain.setValueAtTime(.0001,audioCtx.currentTime+off); g.gain.exponentialRampToValueAtTime(.15,audioCtx.currentTime+off+.02); g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+off+.18); o.connect(g).connect(audioCtx.destination); o.start(audioCtx.currentTime+off); o.stop(audioCtx.currentTime+off+.2); });
+  }catch(e){}
+}
+function startShift(){
+  show('s-unit'); $('#simControls').classList.remove('hidden');
+  S.running = true; setSpeed(1); applyPace();
+  logAct('Shift started');
+  renderUnit();
+  clearInterval(tickTimer); tickTimer = setInterval(tick, 1000);
+}
+function applyPace(){
+  $('#paceBtn').textContent = S.timed ? '⏱ Timed' : '🧘 Untimed';
+  $('#speed').classList.toggle('hidden', !S.timed);
+  $('#skipBtn').classList.toggle('hidden', S.timed);
+  updateSkip();
+}
+function nextEventMin(){
+  const mins = [];
+  U.patients.forEach(p=>p.events.forEach(e=>{ if (!S.pts[p.id].firedEvents.includes(e.id)) mins.push(e.atMinute); }));
+  U.priorityEvents.forEach(e=>{ if (!S.prio[e.id]) mins.push(e.atMinute); });
+  const m = mins.filter(x=>x>S.min); return m.length ? Math.min(...m) : null;
+}
+function updateSkip(){
+  if (!S || S.timed) return;
+  const n = nextEventMin();
+  $('#skipBtn').textContent = S.min>=SHIFT_LEN ? '🏁 Finish shift' : n!=null ? `⏭ Skip to ${fmt(n)}` : '⏭ Skip to 11:00';
+}
+function skipAhead(){
+  if (S.ended) return;
+  if (S.min >= SHIFT_LEN){ endShiftPrompt(true); return; }
+  const n = nextEventMin(); const target = n!=null ? n : SHIFT_LEN;
+  logAct(`Skipped ahead to ${fmt(target)}`);
+  advance(target - S.min);
+  if (S.min >= SHIFT_LEN) endShiftPrompt(true);
+}
+function setSpeed(s){ S.speed = s; document.querySelectorAll('#speed button').forEach(b=>b.classList.toggle('on', +b.dataset.s===s)); }
+function advance(mins){ if (S.ended) return; S.min = Math.min(SHIFT_LEN, S.min + mins); checkEvents(); checkPrio(); updateClock(); }
+function tick(){
+  if (S.ended || !S.timed || !S.speed || $('#modalRoot').children.length || !$('#s-case').classList.contains('hidden')) return;  // pause while a dialog or case study is open
+  advance(S.speed);
+  if (S.min >= SHIFT_LEN){ endShiftPrompt(true); }
+}
+function updateClock(){
+  $('#clock').textContent = fmt(S.min); updateSkip();
+  if (!$('#s-unit').classList.contains('hidden')) { renderCensus(); renderSide(); }
+  if (!$('#s-chart').classList.contains('hidden')) { renderChartEvent(); renderTabs(); if (S.tab==='mar') renderMAR(); }
+}
+function checkEvents(){
+  U.patients.forEach(p=>{
+    const ps = S.pts[p.id];
+    p.events.forEach(e=>{
+      if (e.atMinute <= S.min && !ps.firedEvents.includes(e.id)){
+        ps.firedEvents.push(e.id);
+        ps.events[e.id] = {firedAt: S.min, status:'open'};
+        Object.entries(e.vitals||{}).forEach(([k,v])=>{ if (k in ps.cur && isFinite(+v) && +v>0) ps.cur[k] = +v; });
+        if (e.rhythm) ps.rhythm = e.rhythm;
+        logAct(`ALERT Rm ${p.room}: ${e.alert}`);
+        beep();
+        toast(`<b>Rm ${esc(p.room)} · ${esc(p.name)}</b><br>${esc(e.alert)}<div class="small" style="opacity:.7;margin-top:4px">Tap to respond</div>`, ()=>openEvent(p.id, e.id), e.id);
+      }
+    });
+  });
+}
+function checkPrio(){
+  U.priorityEvents.forEach(e=>{
+    if (e.atMinute <= S.min && !S.prio[e.id]){
+      S.prio[e.id] = {firedAt:S.min, status:'open', order: shuffle(e.items.map((_,i)=>i))};
+      logAct(`PRIORITY CALL: ${e.alert}`); beep();
+      toast(`<b>🚦 ${esc(e.alert)}</b><br><span class="small">Several things need you at once.</span><div class="small" style="opacity:.7;margin-top:4px">Tap to prioritize</div>`, ()=>openPrio(e.id), e.id);
+    }
+  });
+}
+function openEvents(pid){ const ps=S.pts[pid]; return U.patients.find(p=>p.id===pid).events.filter(e=>ps.events[e.id]?.status==='open'); }
+
+/* ============================================================
+   Unit census
+   ============================================================ */
+function abn(k,v){ return ({hr:v<50||v>120, sbp:v<90||v>180, rr:v<10||v>26, spo2:v<92, temp:v>=100.4||v<96.8})[k]; }
+function medsDue(p){ const ps=S.pts[p.id]; return p.meds.filter(m=>!ps.meds[m.id] && parseClock(m.due)!=null && parseClock(m.due) <= S.min+30); }
+function renderUnit(){ $('#unitTitle').textContent = U.unit.name; $('#unitDesc').textContent = U.unit.description||''; renderCensus(); renderSide(); renderCases(); refreshScore(); }
+
+/* ---- Unfolding case studies ---- */
+function renderCases(){
+  const el = $('#caseCard'); if (!el) return;
+  if (!U.cases.length){ el.classList.add('hidden'); return; } el.classList.remove('hidden');
+  el.innerHTML = `<div class="sectionhead" style="margin-bottom:6px"><div><h4 style="margin:0">📂 Case studies</h4><div class="small muted" style="margin-top:4px">Unfolding cases from your slides. Each one follows a new client over time. The shift clock pauses while you work a case.</div></div></div>
+  ${U.cases.map(c=>{ const a=S.cases[c.id]?.answers||{}; const n=Object.keys(a).length, r=Object.values(a).filter(x=>x.correct).length;
+    return `<div class="case-tile"><div class="ico">${n>=c.stages.length?(r===n?'🏆':'✅'):'📂'}</div><div style="flex:1;min-width:0"><b>${esc(c.title)}</b><div class="small muted">${esc(c.patient)}</div>
+      <div class="meter" style="max-width:260px"><div style="width:${Math.round(n/c.stages.length*100)}%"></div></div></div>
+      <span class="small muted" style="white-space:nowrap">${n}/${c.stages.length} stages${n?` · ${r} right`:''}</span><button class="btn sm ${n<c.stages.length?'primary':''}" data-case="${c.id}">${n?(n<c.stages.length?'Continue':'Review'):'Open case'}</button></div>`; }).join('')}`;
+  el.querySelectorAll('[data-case]').forEach(b=>b.onclick=()=>openCase(b.dataset.case));
+}
+function openCase(id){
+  const ci = U.cases.findIndex(c=>c.id===id), c = U.cases[ci]; if (!c) return;
+  const cs = S.cases[id] = S.cases[id] || {answers:{}};
+  stopMonitor(); show('s-case');
+  $('#caseChip').textContent = `📂 Case study ${ci+1} of ${U.cases.length}`;
+  $('#caseTitle').textContent = c.title; $('#casePt').textContent = c.patient;
+  const n = Object.keys(cs.answers).length, finished = n>=c.stages.length;
+  const right = Object.values(cs.answers).filter(x=>x.correct).length;
+  $('#caseBody').innerHTML = `<div class="timeline">
+    <div class="tl-item"><div class="card box"><span class="pill teal">Presentation</span><p style="margin:8px 0 0">${esc(c.presentation)}</p></div></div>
+    ${c.stages.map((st,i)=>{ const unlocked = i===0 || cs.answers[i-1];
+      return unlocked ? `<div class="tl-item" id="cst${i}"><div class="card box"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="pill teal">⏱ ${esc(st.time||'Stage '+(i+1))}</span><span class="small muted">Stage ${i+1} of ${c.stages.length}</span></div>
+        <p style="margin:8px 0 0">${esc(st.update)}</p><div class="card q" id="csq${i}"></div></div></div>`
+      : `<div class="tl-item locked"><div class="card box" style="opacity:.55"><span class="pill gray">🔒 Stage ${i+1}</span> <span class="small muted">Answer the stage above to see what happens next.</span></div></div>`; }).join('')}
+    ${finished?`<div class="tl-item"><div class="card box" style="border-color:#f9c8dc"><span class="pill ${right===c.stages.length?'green':'amber'}">${right===c.stages.length?'🏆 Case solved':'Case complete'} · ${right}/${c.stages.length}</span>
+      <p style="margin:8px 0 0"><b>Takeaway:</b> ${esc(c.takeaway)} ${c.slideRef?`<span class="pill teal">${esc(c.slideRef)}</span>`:''}</p>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn" id="caseDone">Back to the unit</button>${U.cases[ci+1]?`<button class="btn primary" id="caseNext">Next case: ${esc(U.cases[ci+1].title)} ›</button>`:''}</div></div></div>`:''}
+  </div>`;
+  c.stages.forEach((st,i)=>{ const el=$('#csq'+i); if(!el) return;
+    renderQuestion(st.question, i, el, cs.answers[i], res=>{
+      cs.answers[i]=res; skill(st.question.skill, res.correct?1:0);
+      award('cases', res.correct?1:0, {ok:res.correct, xp: res.correct?25:0});
+      logAct(`Case "${c.title}" stage ${i+1}: ${res.correct?'correct':'incorrect'}`);
+      const a=Object.values(cs.answers); if (a.length===c.stages.length && a.every(x=>x.correct)) unlock('casecrack');
+      const y=window.scrollY; openCase(id); window.scrollTo(0,y);
+      const nx=$('#cst'+(i+1)); if (nx) setTimeout(()=>nx.scrollIntoView({behavior:'smooth',block:'start'}),250);
+    });
+  });
+  const d=$('#caseDone'); if(d) d.onclick=()=>{ show('s-unit'); renderUnit(); };
+  const nx=$('#caseNext'); if(nx) nx.onclick=()=>openCase(U.cases[ci+1].id);
+  applyPhotos($('#s-case'));
+}
+
+/* ---- Priority calls: several needs at once ---- */
+function openPrio(id){
+  const e = U.priorityEvents.find(x=>x.id===id), st = S.prio[id]; if (!e || !st) return;
+  const draw = () => {
+    const done = st.status==='done';
+    return `<div class="eimg" style="${bgPhoto('corridor','',900)};background-size:cover;background-position:center"></div>
+    <div class="small muted mono">${fmt(st.firedAt)} · ${esc(U.unit.name)}</div>
+    <p style="margin:10px 0">${esc(e.scenario)}</p>
+    <p style="margin:12px 0 4px;font-weight:700">🚦 Put these in the order you'll handle them.</p>
+    ${st.order.map((oi,pos)=>`<div class="ord-item ${done?(e.answer[pos]===oi?'opt right':'opt wrong'):''}"><span class="num">${pos+1}</span><span class="lab">${esc(e.items[oi])}</span>${done?'':`<button data-up="${pos}" type="button">↑</button><button data-dn="${pos}" type="button">↓</button>`}</div>`).join('')}
+    ${done?`<div class="fb ${st.hits===e.items.length?'good':'bad'}"><b>${st.hits===e.items.length?'Perfect order.':'Best order:'}</b> ${st.hits===e.items.length?'':e.answer.map(i=>esc(e.items[i])).join(' → ')+'. '}${esc(e.rationale)} ${e.slideRef?`<span class="pill teal">${esc(e.slideRef)}</span>`:''}</div>`:''}`;
+  };
+  const wire = () => {
+    $('#prBody').innerHTML = draw();
+    $('#prBody').querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{ const p=+b.dataset.up; if(p>0){[st.order[p-1],st.order[p]]=[st.order[p],st.order[p-1]]; wire();} });
+    $('#prBody').querySelectorAll('[data-dn]').forEach(b=>b.onclick=()=>{ const p=+b.dataset.dn; if(p<st.order.length-1){[st.order[p+1],st.order[p]]=[st.order[p],st.order[p+1]]; wire();} });
+  };
+  modal(`🚦 ${e.alert}`, `<div id="prBody"></div>`, st.status==='done'?[{label:'Close',primary:true}]:[{label:'Not now'},{label:'Lock in order', primary:true, keep:true, onclick:()=>{
+    document.querySelectorAll(`.toast[data-key="${e.id}"]`).forEach(t=>t.remove());
+    st.status='done'; st.hits = st.order.filter((v,i)=>v===e.answer[i]).length; const perfect = st.hits===e.items.length;
+    skill('priority', st.hits, e.items.length); award('prio', st.hits, {ok:perfect, xp: st.hits*12});
+    if (perfect) unlock('juggler');
+    logAct(`Priority call "${e.alert}": ${st.hits}/${e.items.length} in the right place`);
+    wire(); setFooter([{label:'Close',primary:true}]); advance(3);
+  }}], true);
+  wire();
+}
+function renderCensus(){
+  $('#census').innerHTML = U.patients.map(p=>{
+    const ps=S.pts[p.id], c=ps.cur, open=openEvents(p.id).length, due=medsDue(p).length;
+    const vit = (k,label,val)=>`<span class="${abn(k,c[k])?'ab':''}">${label} ${val}</span>`;
+    const acu = ['','green','teal','amber','red'][p.acuity];
+    return `<div class="card room ac${p.acuity} ${open?'alerting':''}" data-pid="${p.id}">
+      <div class="rimg" style="${bgPhoto(['room','corridor','doctor'][parseInt(p.id.slice(1))%3],'linear-gradient(180deg,rgba(255,240,246,0) 30%,rgba(255,240,246,.35))',600)};background-size:cover;background-position:center"><span class="rno">RM ${esc(p.room)}</span><span class="pill ${acu} acu">Acuity ${p.acuity}</span><span class="calllight" title="Call light"></span></div>
+      <div class="rb"><div class="ptrow">${avatar(p)}<div>
+      <div class="nm">${esc(p.name)} <span class="muted" style="font-weight:500;font-size:14px">${esc(p.age)}${esc(p.sex)}</span></div></div></div>
+      <div class="dx">${esc(p.diagnosis)}</div>
+      <div class="badges">
+        <span class="pill ${codeClass(p.codeStatus)}">${esc(p.codeStatus)}</span>
+        ${p.allergies.length?`<span class="pill red">Allergy</span>`:''}
+        ${p.isolation && !/none/i.test(p.isolation)?`<span class="pill amber">${esc(p.isolation)} iso</span>`:''}
+        ${due?`<span class="pill teal">${due} med${due>1?'s':''} due</span>`:''}
+        ${open?`<span class="pill red">● Needs you</span>`:''}
+      </div>
+      <div class="vit">${vit('hr','HR',c.hr)}${vit('sbp','BP',c.sbp+'/'+c.dbp)}${vit('spo2','SpO₂',c.spo2+'%')}${vit('rr','RR',c.rr)}</div>
+      <div class="small muted" style="margin-top:4px">As of ${ps.lastVitalsMin==null?'06:45':fmt(ps.lastVitalsMin)} · ${esc(ps.rhythm)}</div>
+    </div></div>`;
+  }).join('');
+  $('#census').querySelectorAll('.room').forEach(el=>el.onclick=()=>openChart(el.dataset.pid));
+}
+function renderSide(){
+  const items = [];
+  U.patients.forEach(p=>p.events.forEach(e=>{ const st=S.pts[p.id].events[e.id]; if (st) items.push({p,e,st}); }));
+  items.sort((a,b)=>b.st.firedAt-a.st.firedAt);
+  $('#feed').innerHTML = items.length ? items.map(({p,e,st})=>`<div class="alert-item ${st.status==='open'?'open':''}"><div class="t">${fmt(st.firedAt)} · RM ${esc(p.room)}</div>${esc(e.alert)}<div style="margin-top:6px">${st.status==='open'?`<button class="btn sm danger" data-ev="${p.id}|${e.id}">Respond</button>`:`<span class="pill ${st.correct?'green':'red'}">${st.correct?'Handled well':'Reviewed'}</span>`}</div></div>`).join('') : '<div class="small muted">Quiet for now. Keep an eye on your call lights.</div>';
+  const prioItems = U.priorityEvents.filter(e=>S.prio[e.id]).map(e=>{ const st=S.prio[e.id]; return `<div class="alert-item ${st.status==='open'?'open':''}"><div class="t">${fmt(st.firedAt)} · 🚦 PRIORITY CALL</div>${esc(e.alert)}<div style="margin-top:6px">${st.status==='open'?`<button class="btn sm danger" data-pr="${e.id}">Prioritize</button>`:`<span class="pill ${st.hits===e.items.length?'green':'amber'}">${st.hits}/${e.items.length} in order</span>`}</div></div>`; }).join('');
+  if (prioItems) $('#feed').innerHTML = (items.length ? $('#feed').innerHTML : '') + prioItems;
+  $('#feed').querySelectorAll('[data-ev]').forEach(b=>b.onclick=()=>{ const [pid,eid]=b.dataset.ev.split('|'); openEvent(pid,eid); });
+  $('#feed').querySelectorAll('[data-pr]').forEach(b=>b.onclick=()=>openPrio(b.dataset.pr));
+  // worksheet: meds + tasks by time
+  const tasks = [];
+  U.patients.forEach(p=>{
+    const ps=S.pts[p.id];
+    p.meds.forEach(m=>{ const t=parseClock(m.due); if(t==null) return; tasks.push({t, done:!!ps.meds[m.id], late:!ps.meds[m.id] && S.min>t+60, text:`Rm ${p.room} · ${m.name} ${m.dose}`, pid:p.id, tab:'mar'}); });
+    const nAssessed = Object.keys(ps.marks).length;
+    tasks.push({t:30, done:nAssessed>=p.assessment.length, late:S.min>90 && nAssessed<p.assessment.length, text:`Rm ${p.room} · Head-to-toe assessment (${nAssessed}/${p.assessment.length})`, pid:p.id, tab:'assess'});
+    const nl = Object.keys(S.labCalls[p.id]||{}).length;
+    tasks.push({t:20, done:nl>=p.labs.length, late:S.min>90 && nl<p.labs.length, text:`Rm ${p.room} · Interpret morning labs (${nl}/${p.labs.length})`, pid:p.id, tab:'labs'});
+    tasks.push({t:60, done:ps.vitalsLog.length>0, late:S.min>120 && !ps.vitalsLog.length, text:`Rm ${p.room} · Vital signs`, pid:p.id, tab:'vitals'});
+  });
+  U.cases.forEach((c,ci)=>{ const n=Object.keys(S.cases[c.id]?.answers||{}).length; tasks.push({t:45+ci*45, done:n>=c.stages.length, late:false, text:`📂 Case study: ${c.title} (${n}/${c.stages.length})`, caseId:c.id}); });
+  tasks.sort((a,b)=>a.t-b.t || a.text.localeCompare(b.text));
+  $('#worksheet').innerHTML = tasks.map((k,i)=>`<div class="task ${k.late?'late':''} ${k.done?'done':''}" style="${k.done?'opacity:.55':''};cursor:pointer" data-i="${i}"><span class="ck">${k.done?'✓':''}</span><span class="when">${fmt(k.t)}</span><span style="${k.done?'text-decoration:line-through':''}">${esc(k.text)}</span></div>`).join('');
+  $('#worksheet').querySelectorAll('.task').forEach(el=>el.onclick=()=>{ const k=tasks[+el.dataset.i]; if (k.caseId){ openCase(k.caseId); return; } openChart(k.pid, k.tab); });
+}
+
+/* ============================================================
+   Chart
+   ============================================================ */
+const TABS = [['summary','Summary'],['vitals','Monitor & Vitals'],['assess','Assessment'],['labs','Labs'],['mar','MAR'],['orders','Orders'],['notes','Notes'],['talk','Communicate'],['quiz','Patient quiz']];
+function P(){ return U.patients.find(p=>p.id===S.current); }
+function openChart(pid, tab){
+  S.current = pid; S.tab = tab || 'summary';
+  const p = P();
+  $('#chartHead').innerHTML = `<div class="chart-head">
+      <div class="ptrow">${avatar(p)}<div><div class="nm">${esc(p.name)}</div><div class="mono small muted">MRN ${esc(p.mrn||'')}</div></div></div>
+      <div class="meta">
+        <span>Room <b>${esc(p.room)}</b></span><span>Age/Sex <b>${esc(p.age)} ${esc(p.sex)}</b></span><span>Wt <b>${esc(p.weightKg||'—')} kg</b></span>
+        <span>Day <b>${esc(p.hospitalDay||1)}</b></span><span>Code <b>${esc(p.codeStatus)}</b></span><span>Isolation <b>${esc(p.isolation)}</b></span>
+        <span>Attending <b>${esc(p.attending||'')}</b></span><span>Dx <b>${esc(p.diagnosis)}</b></span>
+      </div>
+      <div>${p.allergies.length?`<div class="allergy-band">⚠ ALLERGIES: ${esc(p.allergies.join(', '))}</div>`:`<span class="pill green">NKDA</span>`}</div>
+    </div>`;
+  show('s-chart'); renderChartEvent(); renderTabs(); renderTab();
+}
+function renderChartEvent(){
+  const p = P(); if (!p) return;
+  const open = openEvents(p.id);
+  $('#chartEvent').innerHTML = open.map(e=>`<div class="event-banner"><div><b style="color:var(--red)">● ${fmt(S.pts[p.id].events[e.id].firedAt)} · ${esc(e.alert)}</b></div><button class="btn danger sm" data-ev="${e.id}">Go to bedside</button></div>`).join('');
+  $('#chartEvent').querySelectorAll('[data-ev]').forEach(b=>b.onclick=()=>openEvent(p.id,b.dataset.ev));
+}
+function renderTabs(){
+  const p=P(); const ps=S.pts[p.id];
+  const dot = {labs: Object.keys(S.labCalls[p.id]||{}).length<p.labs.length, mar: medsDue(p).length>0, assess: Object.keys(ps.marks).length<p.assessment.length, quiz: Object.keys(ps.quiz).length<p.quiz.length};
+  $('#chartTabs').innerHTML = TABS.map(([k,l])=>`<button data-t="${k}" class="${S.tab===k?'on':''}">${l}${dot[k]?'<span class="dot"></span>':''}</button>`).join('');
+  $('#chartTabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{ S.tab=b.dataset.t; renderTabs(); renderTab(); });
+}
+function renderTab(){
+  stopMonitor();
+  ({summary:renderSummary, vitals:renderVitals, assess:renderAssess, labs:renderLabs, mar:renderMAR, orders:renderOrders, notes:renderNotes, talk:renderTalk, quiz:renderPtQuiz})[S.tab]();
+}
+function renderSummary(){
+  const p=P();
+  $('#chartBody').innerHTML = `<div class="grid2">
+    <div class="card box"><h4>Handoff (SBAR)</h4><div class="sbar" style="margin:0"><b>S</b><div>${esc(p.sbar.situation)}</div><b>B</b><div>${esc(p.sbar.background)}</div><b>A</b><div>${esc(p.sbar.assessment)}</div><b>R</b><div>${esc(p.sbar.recommendation)}</div></div></div>
+    <div class="card box"><h4>History of present illness</h4><p style="margin:0 0 12px">${esc(p.hpi)}</p><h4>Past medical history</h4><p style="margin:0 0 12px">${esc(p.pmh.join(', ')||'—')}</p><h4>Social</h4><p style="margin:0">${esc(p.socialHx||'—')}</p></div>
+  </div>
+  <div class="card box" style="margin-top:16px"><h4>Teaching focus</h4><p style="margin:0">${esc(p.focus||'')} <span class="pill teal">${esc(p.slideRefs||'')}</span></p></div>`;
+}
+
+/* ---- Monitor ---- */
+let monRAF = null;
+function stopMonitor(){ if (monRAF) cancelAnimationFrame(monRAF); monRAF=null; }
+function ecgAt(t, beatDur, rhythm){
+  const g=(x,mu,s,a)=>a*Math.exp(-((x-mu)**2)/(2*s*s));
+  const r = rhythm.toLowerCase();
+  let y = 0; const sc = Math.min(1, beatDur/0.8);
+  const noP = /fib/.test(r);
+  if (!noP && !/flutter/.test(r)) y += g(t,0.10*sc+0.02,0.025,0.12);
+  if (/flutter/.test(r)){ const ph=(t%0.2)/0.2; y += 0.12*(ph<0.8?ph/0.8:(1-ph)/0.2) - 0.06; }
+  if (/fib/.test(r)) y += 0.035*Math.sin(t*47)+0.025*Math.sin(t*31+1);
+  const qrs = /first-degree|1st/.test(r) ? 0.30*sc+0.05 : 0.2*sc+0.03;
+  if (/paced/.test(r)) y += g(t,qrs-0.03,0.003,0.9);
+  y += g(t,qrs,0.008,-0.1)+g(t,qrs+0.03,0.011,1)+g(t,qrs+0.06,0.01,-0.25)+g(t,qrs+0.25*sc+0.05,0.04,0.28);
+  return y;
+}
+function renderVitals(){
+  const p=P(), ps=S.pts[p.id];
+  const rows = [...p.vitals.map(v=>({...v, src:'prior'})), ...ps.vitalsLog.map(v=>({...v, src:'you'}))];
+  $('#chartBody').innerHTML = `
+    <div class="monitor"><div><div class="rhythm-lbl" id="rhLbl">II · ${esc(ps.rhythm)}</div><canvas id="mon" width="900" height="190"></canvas></div>
+      <div class="mvals" id="mvals"></div></div>
+    <div style="display:flex;gap:10px;margin:14px 0;align-items:center;flex-wrap:wrap"><button class="btn primary" id="takeV">Take a full set of vitals</button><span class="small muted">The monitor is live. Recording vitals charts them at the current time and takes 5 minutes.</span></div>
+    <div class="grid2">
+      <div class="card box"><h4>Vital signs flowsheet</h4><table class="t"><thead><tr><th>Time</th><th>HR</th><th>BP</th><th>RR</th><th>SpO₂</th><th>T °F</th><th>Pain</th></tr></thead><tbody>
+      ${rows.map(v=>`<tr${v.src==='you'?' style="background:var(--teal-soft)"':''}><td class="num">${esc(v.time)}</td>${[['hr',v.hr],['sbp',v.sbp+'/'+v.dbp],['rr',v.rr],['spo2',v.spo2],['temp',v.temp]].map(([k,x])=>`<td class="num ${abn(k,k==='sbp'?v.sbp:v[k])?'flagH':''}">${esc(x)}</td>`).join('')}<td class="num">${esc(v.pain)}</td></tr>`).join('')}
+      </tbody></table></div>
+      <div class="card box"><h4>Trends</h4>${trendSVG(rows)}</div>
+    </div>`;
+  $('#takeV').onclick = ()=>{
+    const c=ps.cur; const j=(x,d)=>Math.round((x+(Math.random()*2-1)*d)*10)/10;
+    const v={time:fmt(S.min).replace(':',''),hr:Math.round(j(c.hr,3)),sbp:Math.round(j(c.sbp,4)),dbp:Math.round(j(c.dbp,3)),rr:Math.round(j(c.rr,1)),spo2:Math.min(100,Math.round(j(c.spo2,1))),temp:j(c.temp,0.2),pain:c.pain};
+    ps.vitalsLog.push(v); ps.lastVitalsMin=S.min; addXP(5);
+    if (U.patients.every(x=>S.pts[x.id].vitalsLog.length)) unlock('vitals');
+    logAct(`Took vitals Rm ${p.room}: HR ${v.hr} BP ${v.sbp}/${v.dbp} RR ${v.rr} SpO2 ${v.spo2} T ${v.temp}`);
+    advance(5); renderVitals();
+  };
+  startMonitor();
+}
+function trendSVG(rows){
+  if (rows.length<2) return '<div class="small muted">Not enough readings yet.</div>';
+  const W=420,H=180,pad=28, n=rows.length;
+  const series=[['hr','#1f9d55','HR'],['sbp','#c42b2b','SBP'],['spo2','#1b7fc4','SpO₂']];
+  const all=rows.flatMap(r=>series.map(s=>r[s[0]])); const lo=Math.min(...all)-10, hi=Math.max(...all)+10;
+  const x=i=>pad+i*(W-pad*2)/(n-1), y=v=>H-pad-(v-lo)/(hi-lo)*(H-pad*2);
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%"><g font-size="10" fill="#5d6d7a" font-family="JetBrains Mono">${rows.map((r,i)=>`<text x="${x(i)}" y="${H-8}" text-anchor="middle">${esc(r.time)}</text>`).join('')}</g>
+  ${series.map(([k,c])=>`<polyline fill="none" stroke="${c}" stroke-width="2" points="${rows.map((r,i)=>x(i)+','+y(r[k])).join(' ')}"/>${rows.map((r,i)=>`<circle cx="${x(i)}" cy="${y(r[k])}" r="3" fill="${c}"/>`).join('')}`).join('')}
+  <g font-size="11" font-family="Plus Jakarta Sans">${series.map(([k,c,l],i)=>`<rect x="${pad+i*70}" y="4" width="10" height="10" fill="${c}" rx="2"/><text x="${pad+i*70+14}" y="13">${l}</text>`).join('')}</g></svg>`;
+}
+function startMonitor(){
+  const cv=$('#mon'); if(!cv) return; const ctx=cv.getContext('2d'); const W=cv.width,H=cv.height;
+  const p=P(), ps=S.pts[p.id];
+  let x=0, last=performance.now(), tBeat=0, beatDur=60/Math.max(20,ps.cur.hr), tResp=0;
+  let prevE=null, prevS=null; const pxPerSec=150;
+  ctx.fillStyle='#05090c'; ctx.fillRect(0,0,W,H);
+  let lastVals=0;
+  function frame(now){
+    const dt=Math.min(0.05,(now-last)/1000); last=now;
+    const steps=Math.max(1,Math.round(dt*pxPerSec));
+    for(let s=0;s<steps;s++){
+      const sdt=1/pxPerSec; tBeat+=sdt; tResp+=sdt;
+      if(tBeat>=beatDur){ tBeat-=beatDur; const base=60/Math.max(20,ps.cur.hr); beatDur = /fib/i.test(ps.rhythm) ? base*(0.6+Math.random()*0.8) : base; }
+      const e=ecgAt(tBeat,beatDur,ps.rhythm);
+      const ph=tBeat/beatDur; const pl= ph<0.3? Math.sin(ph/0.3*Math.PI/2) : Math.max(0, 1-(ph-0.3)/0.7*0.9) + 0.08*Math.sin((ph-0.3)*18)*(ph>0.35&&ph<0.55?1:0);
+      const ye=60-e*45, ys=150-pl*30*(ps.cur.spo2<88?0.5:1);
+      ctx.fillStyle='#05090c'; ctx.fillRect(x,0,14,H);
+      ctx.lineWidth=2;
+      if(prevE!=null&&x>0){ ctx.strokeStyle='#3df57a'; ctx.beginPath(); ctx.moveTo(x-1,prevE); ctx.lineTo(x,ye); ctx.stroke(); ctx.strokeStyle='#3fd2ff'; ctx.beginPath(); ctx.moveTo(x-1,prevS); ctx.lineTo(x,ys); ctx.stroke(); }
+      prevE=ye; prevS=ys; x++; if(x>=W){x=0;prevE=null;}
+    }
+    if(now-lastVals>1000){ lastVals=now; drawVals(); }
+    monRAF=requestAnimationFrame(frame);
+  }
+  function drawVals(){
+    const c=ps.cur; const el=$('#mvals'); if(!el) return;
+    $('#rhLbl').textContent='II · '+ps.rhythm;
+    el.innerHTML=`<div class="mv hr ${abn('hr',c.hr)?'alarm':''}"><div class="l">HR bpm</div><div class="v">${Math.round(c.hr)}</div></div>
+      <div class="mv sp ${abn('spo2',c.spo2)?'alarm':''}"><div class="l">SpO₂ %</div><div class="v">${Math.round(c.spo2)}</div></div>
+      <div class="mv bp ${abn('sbp',c.sbp)?'alarm':''}"><div class="l">NIBP mmHg</div><div class="v">${Math.round(c.sbp)}<small>/${Math.round(c.dbp)}</small></div></div>
+      <div class="mv rr ${abn('rr',c.rr)?'alarm':''}"><div class="l">RESP</div><div class="v">${Math.round(c.rr)}</div></div>
+      <div class="mv tp ${abn('temp',c.temp)?'alarm':''}"><div class="l">TEMP °F</div><div class="v"><small>${c.temp}</small></div></div>`;
+  }
+  drawVals(); monRAF=requestAnimationFrame(frame);
+}
+
+/* ---- Assessment ---- */
+function renderAssess(){
+  const p=P(), ps=S.pts[p.id];
+  $('#chartBody').innerHTML = `<p class="muted small" style="margin-top:0">Assess each system at the bedside (2 min each), then decide whether the finding is within normal limits or abnormal for this patient.</p>
+  <div class="sys">${p.assessment.map((a,i)=>{
+    const shown=ps.assessed[i], mk=ps.marks[i];
+    return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><b>${esc(a.system)}</b>${mk?`<span class="pill ${mk.ok?'green':'red'}">${mk.ok?'Correct':'Review'}</span>`:''}</div>
+      ${shown?`<div class="finding">${esc(a.finding)}</div>`:`<button class="btn sm" style="margin-top:10px" data-a="${i}">Assess</button>`}
+      ${shown&&!mk?`<div class="marks"><button class="btn sm" data-m="${i}|0">WNL</button><button class="btn sm" data-m="${i}|1">Abnormal</button></div>`:''}
+      ${mk?`<div class="res" style="color:${mk.ok?'var(--green)':'var(--red)'}">You marked ${mk.val?'abnormal':'WNL'}. This finding is ${a.abnormal?'abnormal':'within normal limits'} for this patient.</div>`:''}</div>`;}).join('')}</div>`;
+  $('#chartBody').querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{ ps.assessed[+b.dataset.a]=true; logAct(`Assessed ${p.assessment[+b.dataset.a].system} Rm ${p.room}`); advance(2); renderAssess(); });
+  $('#chartBody').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ const [i,v]=b.dataset.m.split('|').map(Number); const ok=(!!v)===p.assessment[i].abnormal; ps.marks[i]={val:!!v,ok}; award('assess', ok?1:0, {ok, xp: ok?10:0}); skill('critical', ok?1:0);
+    if (Object.keys(ps.marks).length===p.assessment.length && Object.values(ps.marks).every(m=>m.ok)) unlock('headtoe');
+    renderAssess(); renderTabs(); });
+}
+
+/* ---- Labs ---- */
+function labTruth(l){ return l.flag==='C'?'C':l.flag==='H'?'H':l.flag==='L'?'L':'N'; }
+function renderLabs(){
+  const p=P(), ps=S.pts[p.id]; const calls = S.labCalls[p.id] = S.labCalls[p.id] || {};
+  const done = Object.keys(calls).length, right = Object.values(calls).filter(c=>c.ok).length;
+  const LBL = {L:'Low',N:'Normal',H:'High',C:'Critical'};
+  $('#chartBody').innerHTML = `<div class="card box">
+    <div class="sectionhead" style="margin-bottom:10px"><div><h4 style="margin:0">🧪 Morning labs · 05:00 draw</h4><div class="small muted" style="margin-top:4px">Know your normals: call each result Low, Normal, High or Critical before the reference range is revealed.</div></div>
+    <span class="pill ${done===p.labs.length?(right===done?'green':'amber'):'teal'}">${right}/${done} correct · ${p.labs.length-done} left</span></div>
+    <table class="t"><thead><tr><th>Test</th><th>Result</th><th>Your call</th><th>Reference</th><th>Flag</th></tr></thead><tbody>
+  ${p.labs.map((l,i)=>{ const c=calls[i]; const t=labTruth(l);
+    return `<tr><td><b>${esc(l.name)}</b></td><td class="num">${esc(l.value)} <span class="muted">${esc(l.unit)}</span></td>
+      <td>${c?`<span class="pill ${c.ok?'green':'red'}">${c.ok?'✓':'✗'} ${LBL[c.v]}</span>`:`<div style="display:flex;gap:4px;flex-wrap:wrap">${['L','N','H','C'].map(v=>`<button class="btn sm" data-lab="${i}|${v}" style="${v==='C'?'color:var(--red)':''}">${LBL[v]}</button>`).join('')}</div>`}</td>
+      <td class="muted num">${c?esc(l.range):'<span title="Answer to reveal">🔒</span>'}</td>
+      <td>${c?(t==='C'?'<span class="flagC">CRITICAL</span>':t==='N'?'<span class="pill gray">Normal</span>':`<span class="pill amber">${LBL[t]}</span>`):''}</td></tr>`; }).join('')}
+  </tbody></table>
+  ${done===p.labs.length?`<div class="fb info" style="margin-top:12px"><b>Now act on it.</b> Which of these change what you do this morning? Check the MAR hold parameters, and page the provider for anything critical (Communicate tab).</div>`:''}</div>`;
+  $('#chartBody').querySelectorAll('[data-lab]').forEach(b=>b.onclick=()=>{
+    const [i,v]=b.dataset.lab.split('|'); const l=p.labs[+i]; const t=labTruth(l);
+    const ok = v===t; calls[i]={v,ok};
+    skill('labs', ok?1:0); award('labs', ok?1:0, {ok, xp: ok?(t==='C'?15:8):0, label: ok&&t==='C'?'critical caught':''});
+    logAct(`Lab call Rm ${p.room}: ${l.name} ${l.value} → ${v} (${ok?'correct':'actual '+t})`);
+    if (Object.keys(calls).length===p.labs.length && Object.values(calls).every(c=>c.ok)) unlock('labdet');
+    renderLabs(); renderTabs();
+  });
+}
+
+/* ---- MAR ---- */
+function holdMet(p, m){
+  const h=m.holdIf; if(!h) return false; const ps=S.pts[p.id];
+  let val=null; const param=String(h.param);
+  if (param.startsWith('lab:')){ const nm=param.slice(4).toLowerCase(); const l=p.labs.find(l=>l.name.toLowerCase().includes(nm)||nm.includes(l.name.toLowerCase())); if(l) val=parseFloat(l.value); }
+  else if (param in ps.cur) val=ps.cur[param];
+  if (val==null||!isFinite(val)) return false;
+  return h.op==='<' ? val < +h.value : h.op==='>' ? val > +h.value : false;
+}
+function holdVal(p,m){ const h=m.holdIf; if(!h) return ''; const param=String(h.param); if(param.startsWith('lab:')){ const nm=param.slice(4).toLowerCase(); const l=p.labs.find(l=>l.name.toLowerCase().includes(nm)||nm.includes(l.name.toLowerCase())); return l?l.value+' '+l.unit:'n/a'; } return S.pts[p.id].cur[param]; }
+function holdText(h){ if(!h) return ''; const p=String(h.param).replace('lab:',''); const names={hr:'HR',sbp:'SBP',dbp:'DBP',rr:'RR',spo2:'SpO₂',temp:'Temp'}; return `Hold if ${names[p]||p} ${h.op} ${h.value}`; }
+function renderMAR(){
+  const p=P(), ps=S.pts[p.id];
+  const meds=[...p.meds].sort((a,b)=>(parseClock(a.due)??999)-(parseClock(b.due)??999));
+  $('#chartBody').innerHTML = `<div class="card box"><h4>Medication administration record · ${fmt(S.min)}</h4><table class="t"><thead><tr><th>Due</th><th>Medication</th><th>Dose / route / freq</th><th>Indication</th><th>Status</th><th></th></tr></thead><tbody>
+  ${meds.map(m=>{ const st=ps.meds[m.id]; const t=parseClock(m.due); const late=!st&&t!=null&&S.min>t+60; const due=!st&&t!=null&&S.min>=t-30;
+    return `<tr><td class="num ${late?'flagH':''}">${esc(m.due)}</td><td><b>${esc(m.name)}</b> ${m.highAlert?'<span class="pill red">HIGH ALERT</span>':''}${m.holdIf?`<div class="small muted">${esc(holdText(m.holdIf))}</div>`:''}</td><td>${esc(m.dose)} ${esc(m.route)} ${esc(m.freq)}</td><td class="small">${esc(m.indication)}</td>
+    <td>${st?`<span class="pill ${st.ok?'green':'red'}">${st.action==='give'?'Given':'Held'} ${fmt(st.at)}</span>`:late?'<span class="pill red">Late</span>':due?'<span class="pill teal">Due</span>':'<span class="pill gray">Scheduled</span>'}</td>
+    <td>${st?'':`<button class="btn sm primary" data-med="${m.id}">Prepare</button>`}</td></tr>`;}).join('')}
+  </tbody></table></div>`;
+  $('#chartBody').querySelectorAll('[data-med]').forEach(b=>b.onclick=()=>medModal(p, p.meds.find(m=>m.id===b.dataset.med)));
+}
+function medModal(p, m){
+  const ps=S.pts[p.id]; const flow={scan:false, allergy:false, vitals:false};
+  const vitalsFresh = ()=> ps.lastVitalsMin!=null && S.min-ps.lastVitalsMin<=60;
+  const body = () => `
+    <div class="check-step ${flow.scan?'done':''}"><span class="st">${flow.scan?'✓':'1'}</span><div style="flex:1"><b>Scan patient wristband</b><div class="small muted">${flow.scan?`Verified: ${esc(p.name)} · MRN ${esc(p.mrn||'')} · Rm ${esc(p.room)}`:'Two identifiers before every medication.'}</div></div>${flow.scan?'':'<button class="btn sm" id="mScan">Scan</button>'}</div>
+    <div class="check-step ${flow.allergy?'done':''}"><span class="st">${flow.allergy?'✓':'2'}</span><div style="flex:1"><b>Check allergies</b><div class="small muted">${flow.allergy?(p.allergies.length?`<span class="flagH">${esc(p.allergies.join(', '))}</span>`:'No known drug allergies'):'Compare the drug with the allergy list.'}</div></div>${flow.allergy?'':'<button class="btn sm" id="mAll">Review</button>'}</div>
+    <div class="check-step ${flow.vitals?'done':''}"><span class="st">${flow.vitals?'✓':'3'}</span><div style="flex:1"><b>Pre-administration assessment</b><div class="small muted">${flow.vitals?`HR ${ps.cur.hr} · BP ${ps.cur.sbp}/${ps.cur.dbp} · RR ${ps.cur.rr} · SpO₂ ${ps.cur.spo2}% ${String(m.holdIf?.param||'').startsWith('lab:')?'· see Labs tab':''}`:(vitalsFresh()?`Vitals from ${fmt(ps.lastVitalsMin)} are on the flowsheet.`:'Check the vitals and labs this drug depends on.')}</div></div>${flow.vitals?'':'<button class="btn sm" id="mVit">Check now</button>'}</div>
+    <div class="card" style="padding:12px;margin-top:14px;background:var(--soft)"><b>${esc(m.name)}</b> ${esc(m.dose)} ${esc(m.route)} ${esc(m.freq)} ${m.highAlert?'<span class="pill red">HIGH ALERT</span>':''}<div class="small muted">For: ${esc(m.indication)} ${m.holdIf?' · '+esc(holdText(m.holdIf)):''}</div></div>
+    <div class="field"><label>Your decision</label><select id="mDec"><option value="">Choose…</option><option value="give">Give medication</option><option value="hold-param">Hold: hold parameter met</option><option value="hold-allergy">Hold: allergy / contraindication, notify provider</option><option value="hold-clarify">Hold: clarify the order with the provider</option></select></div>
+    <div id="mFb"></div>`;
+  const ex = ()=>{ $('#mScan')&&($('#mScan').onclick=()=>{flow.scan=true; rerender();}); $('#mAll')&&($('#mAll').onclick=()=>{flow.allergy=true; rerender();}); $('#mVit')&&($('#mVit').onclick=()=>{flow.vitals=true; if(!vitalsFresh()){ ps.vitalsLog.push({time:fmt(S.min).replace(':',''),...ps.cur}); ps.lastVitalsMin=S.min; } rerender();}); };
+  const rerender=()=>{ $('#medBody').innerHTML=body(); ex(); };
+  modal(`Medication pass · Rm ${p.room}`, `<div id="medBody">${body()}</div>`, [{label:'Cancel'},{label:'Document', primary:true, keep:true, onclick:(close)=>{
+    const d=$('#mDec').value; if(!d){ $('#mFb').innerHTML='<div class="fb bad">Choose give or hold.</div>'; return; }
+    const met = holdMet(p,m); const shouldHold = m.allergyConflict || met;
+    const action = d==='give'?'give':'hold';
+    const ok = (action==='hold') === shouldHold;
+    let pts = 0; if (ok) pts += 2; if (flow.scan) pts += 1;
+    const t=parseClock(m.due); if (t!=null && S.min>t+60) pts = Math.max(0, pts-1);
+    award('meds', pts, {ok, xp: pts*10}); skill(String(m.holdIf?.param||'').startsWith('lab:') ? 'labs' : 'critical', ok?1:0);
+    if (ok){ S.medsCorrect++; if (shouldHold) unlock('safety'); if (S.medsCorrect>=5) unlock('medpro'); }
+    ps.meds[m.id]={action, ok, at:S.min, scanned:flow.scan, reason:d, shouldHold};
+    const why = m.allergyConflict ? `it conflicts with the allergy list (${p.allergies.join(', ')})` : met ? `the hold parameter is met right now (${holdText(m.holdIf)}; current value ${holdVal(p,m)})` : m.holdIf ? `the hold parameter is not met right now (${holdText(m.holdIf)}; current value ${holdVal(p,m)})` : 'there is no allergy conflict or hold parameter that applies';
+    logAct(`${action==='give'?'Gave':'Held'} ${m.name} Rm ${p.room} — ${ok?'appropriate':'INAPPROPRIATE'}${flow.scan?'':' (wristband not scanned)'}`);
+    $('#medBody').innerHTML = `<div class="fb ${ok?'good':'bad'}"><b>${ok?'Safe decision.':'Not the safest decision.'}</b> Based on this patient's condition right now, the right call was to <b>${shouldHold?'hold':'give'}</b> this dose, because ${esc(why)}.<div class="small" style="margin-top:6px"><b>Teaching note:</b> ${esc(m.rationale)}</div></div>
+      ${flow.scan?'':'<div class="fb bad">You documented without scanning the wristband. Always verify two identifiers.</div>'}
+      <div class="small muted" style="margin-top:8px">+${pts} points</div>`;
+    advance(5);
+    setFooter([{label:'Close', primary:true}]);
+    if (S.tab==='mar') renderMAR(); renderTabs();
+  }}]);
+  ex();
+}
+
+/* ---- Orders / Notes ---- */
+function renderOrders(){ const p=P(); $('#chartBody').innerHTML=`<div class="card box"><h4>Active orders · ${esc(p.attending||'')}</h4><ul style="margin:0;padding-left:20px">${p.orders.map(o=>`<li style="margin:4px 0">${esc(o)}</li>`).join('')}</ul></div>`; }
+function renderNotes(){
+  const p=P(), ps=S.pts[p.id];
+  $('#chartBody').innerHTML=`<div class="grid2"><div class="card box"><h4>Progress notes</h4>${[...p.notes.map(n=>({...n})), ...ps.myNotes].map(n=>`<div style="padding:8px 0;border-bottom:1px solid #eef2f5"><div class="small muted mono">${esc(n.time)} · ${esc(n.author)}</div><div style="white-space:pre-wrap">${esc(n.text)}</div></div>`).join('')}</div>
+  <div class="card box"><h4>Write a nursing note</h4><textarea id="noteTxt" rows="8" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px" placeholder="Focused note (DAR / SOAP / narrative)…"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn primary" id="noteSave">Sign note</button><button class="btn" id="noteFb">Sign &amp; get feedback</button></div><div id="noteOut"></div></div></div>`;
+  const save=()=>{ const t=$('#noteTxt').value.trim(); if(!t) return null; ps.myNotes.push({time:fmt(S.min).replace(':',''),author:'You',text:t}); logAct(`Wrote note Rm ${p.room}`); return t; };
+  $('#noteSave').onclick=()=>{ if(save()) renderNotes(); };
+  $('#noteFb').onclick=async()=>{ const t=save(); if(!t) return; renderNotes(); $('#noteOut').innerHTML='<div class="fb info"><span class="spinner"></span> Instructor reviewing…</div>';
+    try{ const r=await askText(`You are a clinical instructor. Give brief, specific feedback (3-5 bullet points) on this ${U.settings?.learner||'student'}'s nursing note for ${p.name}, ${p.diagnosis}. Current vitals: ${JSON.stringify(ps.cur)}. Check objectivity, completeness, relevant findings, interventions and response, and professional wording.\n\nNOTE:\n${t}`,{modelTier:'quick'}); $('#noteOut').innerHTML=`<div class="fb info prose">${md(r)}</div>`; }
+    catch(e){ $('#noteOut').innerHTML=`<div class="fb bad">${esc(errMsg(e))}</div>`; } };
+}
+
+/* ---- Communicate ---- */
+let talkMode='patient';
+function renderTalk(){
+  const p=P(), ps=S.pts[p.id];
+  $('#chartBody').innerHTML = `<div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn ${talkMode==='patient'?'primary':''}" id="tmP">Talk with ${esc(p.name.split(' ')[0])}</button><button class="btn ${talkMode==='provider'?'primary':''}" id="tmD">Page provider (SBAR)</button></div>
+  <div class="card box"><div class="chat"><div class="msgs" id="msgs"></div><form id="chatForm"><textarea id="chatIn" placeholder="${talkMode==='patient'?'Ask how they feel, explain a med, teach, reassure…':'S: I\'m calling about… B: … A: … R: I would like…'}"></textarea><button class="btn primary">Send</button></form></div>
+  <div class="small muted" style="margin-top:6px">${talkMode==='patient'?'Claude plays the patient using their chart and current condition.':'Claude plays the on-call provider and your instructor scores your SBAR.'}</div></div>`;
+  $('#tmP').onclick=()=>{talkMode='patient';renderTalk();}; $('#tmD').onclick=()=>{talkMode='provider';renderTalk();};
+  const msgs=ps.chats[talkMode];
+  const draw=()=>{ $('#msgs').innerHTML = msgs.length? msgs.map(m=>`<div class="msg ${m.role}">${m.role==='coach'?md(m.text):esc(m.text)}</div>`).join('') : `<div class="small muted">${talkMode==='patient'?`${esc(p.name)} is in bed. Say hello and introduce yourself.`:'Organize your call with SBAR. Give the provider what they need to make a decision.'}</div>`; $('#msgs').scrollTop=1e9; };
+  draw();
+  $('#chatIn').onkeydown=e=>{ if(e.key==='Enter'&&!e.shiftKey&&talkMode==='patient'){ e.preventDefault(); $('#chatForm').requestSubmit(); } };
+  $('#chatForm').onsubmit=async e=>{
+    e.preventDefault(); const t=$('#chatIn').value.trim(); if(!t) return; $('#chatIn').value='';
+    msgs.push({role:'me',text:t}); msgs.push({role:'them',text:'…'}); draw();
+    const open=openEvents(p.id).map(e=>e.description).join(' ');
+    const ctx=`Patient: ${p.name}, ${p.age}${p.sex}, Room ${p.room}. Dx: ${p.diagnosis}. HPI: ${p.hpi}. PMH: ${p.pmh.join(', ')}. Allergies: ${p.allergies.join(', ')||'NKDA'}. Code: ${p.codeStatus}. Current vitals: HR ${ps.cur.hr}, BP ${ps.cur.sbp}/${ps.cur.dbp}, RR ${ps.cur.rr}, SpO2 ${ps.cur.spo2}%, T ${ps.cur.temp}F, pain ${ps.cur.pain}/10, rhythm ${ps.rhythm}. Labs: ${p.labs.map(l=>l.name+' '+l.value+(l.flag?'('+l.flag+')':'')).join(', ')}. Meds: ${p.meds.map(m=>m.name+' '+m.dose).join(', ')}. ${open?'RIGHT NOW: '+open:''} Time ${fmt(S.min)}.`;
+    try{
+      if (talkMode==='patient'){
+        const hist = msgs.filter(m=>m.role!=='coach'&&m.text!=='…').map(m=>({role:m.role==='me'?'user':'assistant',content:m.text}));
+        hist[0].content = `[Role-play setup — stay in character]\nYou are the hospitalized patient below talking with your ${U.settings?.role==='intern'?'doctor':'nurse'}. Persona: ${p.persona||'cooperative, a little anxious'}.\n${ctx}\nReply ONLY as the patient in 1-4 natural sentences. Describe symptoms the way a layperson would; don't use medical jargon or reveal lab values unless a patient would know them. React realistically to teaching, rudeness, or reassurance.\n\nThe ${U.settings?.role==='intern'?'doctor':'nurse'} says: ` + hist[0].content;
+        const r = await askText(hist, {modelTier:'quick'});
+        msgs[msgs.length-1]={role:'them',text:r.trim()};
+        logAct(`Talked with patient Rm ${p.room}`);
+      } else {
+        const prov=(p.attending||'Dr. On-call').split(',')[0];
+        const r = await askJSON(`You are role-playing ${prov}, the on-call provider, receiving a page from the ${U.settings?.role||'RN'} (a ${U.settings?.learner||'student'}). Respond in character: realistic, brief, ask for missing information, and give orders only if appropriate. Then, separately, act as a clinical instructor scoring the communication.\n${ctx}\nEarlier conversation: ${msgs.slice(0,-2).filter(m=>m.role!=='coach').map(m=>(m.role==='me'?'RN: ':'Provider: ')+m.text).join(' | ')||'none'}\n\nRN's page: "${t}"\n\nReturn ONLY JSON: {"reply":"provider's spoken reply","scores":{"S":0-2,"B":0-2,"A":0-2,"R":0-2},"feedback":"2-4 sentences: what was strong and what to add, specific to this patient"}`, {modelTier:'default', cache:false});
+        msgs[msgs.length-1]={role:'them',text:`${prov}: ${r.reply||''}`};
+        const sc=r.scores||{}; const tot=['S','B','A','R'].reduce((a,k)=>a+Math.max(0,Math.min(2,parseInt(sc[k])||0)),0);
+        msgs.push({role:'coach',text:`**SBAR score ${tot}/8** — S ${sc.S??0} · B ${sc.B??0} · A ${sc.A??0} · R ${sc.R??0}\n\n${r.feedback||''}`});
+        S.possibleComm += 4; award('comm', tot/2, {ok: tot>=6, xp: tot*5}); if (tot>=7) unlock('sbar');
+        logAct(`Paged provider about Rm ${p.room} (SBAR ${tot}/8)`);
+      }
+      advance(3);
+    } catch(err){ msgs[msgs.length-1]={role:'them',text:'('+errMsg(err)+')'}; }
+    draw();
+  };
+}
+
+/* ---- Questions (shared) ---- */
+function renderQuestion(q, idx, el, prev, onDone){
+  const ordState = prev?.order || shuffle(q.options.map((_,i)=>i));
+  let selected = new Set(prev?.sel||[]);
+  const answered = !!prev;
+  const typeLbl = {mcq:'Multiple choice',sata:'Select all that apply',order:'Put in order'}[q.type];
+  function draw(fb){
+    let opts='';
+    if (q.type==='order'){
+      opts = ordState.map((oi,pos)=>`<div class="ord-item ${answered?(q.answer[pos]===oi?'opt right':'opt wrong'):''}" style="${answered?'cursor:default':''}"><span class="num">${pos+1}</span><span class="lab">${esc(q.options[oi])}</span>${answered?'':`<button data-up="${pos}" type="button">↑</button><button data-dn="${pos}" type="button">↓</button>`}</div>`).join('');
+    } else {
+      opts = q.options.map((o,i)=>{ let cls=''; if(answered){ const isAns=q.answer.includes(i); cls = isAns?'right':(selected.has(i)?'wrong':''); } else if(selected.has(i)) cls='sel';
+        return `<label class="opt ${cls}"><input type="${q.type==='sata'?'checkbox':'radio'}" name="q${idx}" value="${i}" ${selected.has(i)?'checked':''} ${answered?'disabled':''}><span>${esc(o)}</span></label>`; }).join('');
+    }
+    el.innerHTML = `<div class="qhead"><span style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill gray">${idx+1} · ${typeLbl}</span>${skillPill(q.skill)}</span>${q.slideRef?`<span class="pill teal">${esc(q.slideRef)}</span>`:''}</div>
+      <div class="stem">${esc(q.stem)}</div><div>${opts}</div>
+      ${answered?`<div class="fb ${fb?'good':'bad'}"><b>${fb?'Correct.':'Not quite.'}</b> ${q.type==='order'?'Correct order: '+q.answer.map(i=>esc(q.options[i])).join(' → ')+'. ':''}${esc(q.rationale)}</div>`:`<button class="btn primary sm" style="margin-top:12px" data-check>Check answer</button>`}`;
+    el.querySelectorAll('input').forEach(inp=>inp.onchange=()=>{ const i=+inp.value; if(q.type==='mcq') selected=new Set([i]); else inp.checked?selected.add(i):selected.delete(i); draw(); });
+    el.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{ const p=+b.dataset.up; if(p>0){[ordState[p-1],ordState[p]]=[ordState[p],ordState[p-1]]; draw();} });
+    el.querySelectorAll('[data-dn]').forEach(b=>b.onclick=()=>{ const p=+b.dataset.dn; if(p<ordState.length-1){[ordState[p+1],ordState[p]]=[ordState[p],ordState[p+1]]; draw();} });
+    const ck=el.querySelector('[data-check]');
+    if (ck) ck.onclick=()=>{
+      if (q.type!=='order' && !selected.size) return;
+      let correct;
+      if (q.type==='order') correct = ordState.every((v,i)=>v===q.answer[i]);
+      else correct = selected.size===q.answer.length && q.answer.every(a=>selected.has(a));
+      onDone({sel:[...selected], order:ordState, correct});
+    };
+  }
+  draw(prev?.correct);
+}
+function renderPtQuiz(){
+  const p=P(), ps=S.pts[p.id];
+  $('#chartBody').innerHTML = `<p class="muted small" style="margin-top:0">${Object.values(ps.quiz).filter(x=>x.correct).length}/${p.quiz.length} correct so far.</p>` + p.quiz.map((_,i)=>`<div class="card q" id="pq${i}"></div>`).join('');
+  p.quiz.forEach((q,i)=>renderQuestion(q,i,$('#pq'+i),ps.quiz[i],res=>{ ps.quiz[i]=res; skill(q.skill, res.correct?1:0); award('quizPt', res.correct?1:0, {ok:res.correct, xp: res.correct?20:0}); logAct(`Patient quiz Rm ${p.room} Q${i+1}: ${res.correct?'correct':'incorrect'}`);
+    if (Object.keys(ps.quiz).length===p.quiz.length && Object.values(ps.quiz).every(x=>x.correct)) unlock('quizwhiz');
+    renderPtQuiz(); renderTabs(); }));
+}
+
+/* ---- Events ---- */
+function openEvent(pid, eid){
+  const p=U.patients.find(x=>x.id===pid), e=p.events.find(x=>x.id===eid), ps=S.pts[pid], st=ps.events[eid];
+  if (!st) return;
+  if (S.current!==pid || $('#s-chart').classList.contains('hidden')) openChart(pid,'vitals');
+  let sel=null, cueSel=new Set();
+  // Step 1 (critical thinking): recognize cues. Step 2: take action.
+  const phase = () => st.status==='done' ? 'done' : (e.cues && !st.cues ? 'cues' : 'action');
+  const draw=()=>{
+    const ph = phase();
+    let cuesHtml = '';
+    if (e.cues){
+      if (ph==='cues') cuesHtml = `<p style="margin:14px 0 4px;font-weight:700">Step 1 · 🧠 Recognize cues</p><div class="small muted">${esc(e.cues.question)}</div>
+        ${e.cues.options.map((o,i)=>`<label class="opt ${cueSel.has(i)?'sel':''}"><input type="checkbox" data-c="${i}" ${cueSel.has(i)?'checked':''}><span>${esc(o)}</span></label>`).join('')}`;
+      else if (st.cues) cuesHtml = `<details ${ph==='action'?'open':''} style="margin-top:12px"><summary class="small" style="cursor:pointer;font-weight:700">Step 1 · Cues: ${st.cues.hits}/${e.cues.options.length} right</summary>
+        ${e.cues.options.map((o,i)=>{ const isAns=e.cues.answer.includes(i), picked=st.cues.sel.includes(i); return `<div class="opt ${isAns?'right':picked?'wrong':''}" style="cursor:default;padding:7px 11px"><span>${isAns?'✓':picked?'✗':'·'}</span><span class="small">${esc(o)}</span></div>`; }).join('')}
+        ${e.cues.rationale?`<div class="fb info small">${esc(e.cues.rationale)}</div>`:''}</details>`;
+    }
+    const actionHtml = ph==='cues' ? '' : `<p style="margin:14px 0 4px;font-weight:700">${e.cues?'Step 2 · ':''}🩺 ${esc(e.question)}</p>
+    ${e.options.map((o,i)=>{ let cls=''; if(ph==='done'){ cls=o.correct?'right':(st.choice===i?'wrong':''); } else if(sel===i) cls='sel';
+      return `<div class="opt ${cls}" data-o="${i}"><span>${String.fromCharCode(65+i)}.</span><span>${esc(o.text)}${ph==='done'&&(o.correct||st.choice===i)&&o.feedback?`<div class="small" style="margin-top:4px;opacity:.85">${esc(o.feedback)}</div>`:''}</span></div>`; }).join('')}
+    ${ph==='done'?`<div class="fb ${st.correct?'good':'bad'}"><b>${st.correct?'Good call.':'Review this one.'}</b> ${st.correct?(S.timed?`You responded ${st.respondedAt-st.firedAt} min after the alert.`:''):'The highlighted option is the priority action.'} ${e.slideRef?`<span class="pill teal">${esc(e.slideRef)}</span>`:''}</div>`:''}`;
+    return `<div class="eimg" style="${bgPhoto('nurseBP','',900)};background-size:cover;background-position:center"></div>
+    <div class="small muted mono">${fmt(st.firedAt)} · Room ${esc(p.room)} · ${esc(p.name)}, ${esc(p.age)}${esc(p.sex)}</div>
+    <p style="margin:10px 0">${esc(e.description)}</p>
+    <div class="mono small" style="background:#05090c;color:#3df57a;padding:8px 12px;border-radius:10px">HR ${ps.cur.hr} · BP ${ps.cur.sbp}/${ps.cur.dbp} · RR ${ps.cur.rr} · SpO₂ ${ps.cur.spo2}% · T ${ps.cur.temp}°F · ${esc(ps.rhythm)}</div>
+    ${cuesHtml}${actionHtml}`;
+  };
+  const submitCues = () => {
+    if (!cueSel.size){ $('#evBody').classList.add('shake'); setTimeout(()=>$('#evBody')?.classList.remove('shake'),400); return; }
+    const sel2=[...cueSel]; const hits = e.cues.options.filter((_,i)=>e.cues.answer.includes(i)===cueSel.has(i)).length; const perfect = hits===e.cues.options.length;
+    st.cues={sel:sel2, hits};
+    skill('critical', hits, e.cues.options.length); award('events', 0, {ok:perfect, xp: hits*4, label: perfect?'all cues':''});
+    logAct(`Cues Rm ${p.room} "${e.title}": ${hits}/${e.cues.options.length}`);
+    render();
+  };
+  const act = () => {
+    if (sel==null){ $('#evBody').classList.add('shake'); setTimeout(()=>$('#evBody')?.classList.remove('shake'),400); return; }
+    document.querySelectorAll(`.toast[data-key="${e.id}"]`).forEach(t=>t.remove());
+    st.status='done'; st.choice=sel; st.correct=!!e.options[sel].correct; st.respondedAt=S.min;
+    let pts = st.correct?2:0; if (st.correct && (!S.timed || S.min-st.firedAt<=15)) pts+=1; award('events', pts, {ok:st.correct, xp: pts*15, label: pts===3&&S.timed?'fast response':''});
+    skill('critical', st.correct?1:0);
+    if (st.correct && S.timed && S.min-st.firedAt<=5) unlock('rapid');
+    if (st.correct) Object.entries(e.resolvedVitals||{}).forEach(([k,v])=>{ if(k in ps.cur && isFinite(+v) && +v>0) ps.cur[k]=+v; });
+    logAct(`Responded Rm ${p.room} "${e.title}": ${e.options[sel].text} — ${st.correct?'correct':'incorrect'}`);
+    advance(5); render();
+  };
+  const render = () => {
+    $('#evBody').innerHTML = draw();
+    const ph = phase();
+    setFooter(ph==='done'?[{label:'Close',primary:true}]:[{label:'Not now'},{label: ph==='cues'?'Submit findings':'Act', primary:true, keep:true, onclick: ph==='cues'?submitCues:act}]);
+    document.querySelectorAll('#evBody [data-c]').forEach(c=>c.onchange=()=>{ const i=+c.dataset.c; c.checked?cueSel.add(i):cueSel.delete(i); render(); });
+    document.querySelectorAll('#evBody [data-o]').forEach(d=>d.onclick=()=>{ if(phase()!=='action') return; sel=+d.dataset.o; render(); });
+  };
+  modal(`🔴 ${e.title}`, `<div id="evBody"></div>`, [], true);
+  render();
+}
+
+/* ---- Modal ---- */
+let modalBtns=[];
+function modal(title, html, buttons, urgent){
+  $('#modalRoot').innerHTML = `<div class="modal-bg"><div class="modal ${urgent?'urgent':''}"><div class="mh"><h3>${esc(title)}</h3><button class="btn ghost sm" id="mX" style="${urgent?'color:#fff':''}">✕</button></div><div class="mb">${html}</div><div class="mf" id="mF"></div></div></div>`;
+  $('#mX').onclick=closeModal; setFooter(buttons);
+}
+function setFooter(buttons){
+  modalBtns=buttons; $('#mF').innerHTML=buttons.map((b,i)=>`<button class="btn ${b.primary?'primary':''}" data-b="${i}">${esc(b.label)}</button>`).join('');
+  $('#mF').querySelectorAll('[data-b]').forEach(el=>el.onclick=()=>{ const b=modalBtns[+el.dataset.b]; if(b.onclick) b.onclick(closeModal); if(!b.keep) closeModal(); });
+}
+function closeModal(){ $('#modalRoot').innerHTML=''; if(!$('#s-unit').classList.contains('hidden')){renderCensus();renderSide();} if(!$('#s-chart').classList.contains('hidden')){ renderChartEvent(); renderTabs(); } }
+
+/* ============================================================
+   End of shift, final quiz, debrief
+   ============================================================ */
+function endShiftPrompt(auto){
+  if (S.ended) return;
+  const open = U.patients.reduce((a,p)=>a+openEvents(p.id).length,0) + U.priorityEvents.filter(e=>S.prio[e.id]?.status==='open').length;
+  const pendingMeds = U.patients.reduce((a,p)=>a+p.meds.filter(m=>!S.pts[p.id].meds[m.id]).length,0);
+  const caseLeft = U.cases.reduce((a,c)=>a+c.stages.length-Object.keys(S.cases[c.id]?.answers||{}).length,0);
+  modal(auto?'11:00 — Shift is over':'End your shift?', `<p style="margin-top:0">${auto?'Time to give report.':'Ending now moves you to the end-of-shift quiz.'}</p>${open||pendingMeds?`<div class="notice">Still outstanding: ${open?`${open} unanswered alert${open>1?'s':''}`:''}${open&&pendingMeds?' and ':''}${pendingMeds?`${pendingMeds} medication${pendingMeds>1?'s':''} not documented`:''}. These count as missed.</div>`:'<div class="fb good">All alerts handled and all meds documented.</div>'}${caseLeft?`<div class="notice" style="margin-top:8px">📂 ${caseLeft} case study stage${caseLeft>1?'s':''} still open. You can finish them before ending.</div>`:''}`,
+    auto?[{label:'Go to final quiz', primary:true, onclick:finishShift}]:[{label:'Keep working'},{label:'End shift', primary:true, onclick:finishShift}]);
+}
+function finishShift(){
+  S.ended=true; clearInterval(tickTimer); $('#toasts').innerHTML=''; stopMonitor(); $('#simControls').classList.add('hidden'); logAct('Shift ended');
+  renderFinal(); show('s-final');
+}
+function renderFinal(){
+  const qs=U.finalQuiz; const answered=Object.keys(S.finalAnswers).length;
+  $('#finalProg').textContent = `${answered}/${qs.length} answered`;
+  $('#finalQs').innerHTML = qs.map((_,i)=>`<div class="card q" id="fq${i}"></div>`).join('');
+  qs.forEach((q,i)=>renderQuestion(q,i,$('#fq'+i),S.finalAnswers[i],res=>{ S.finalAnswers[i]=res; skill(q.skill, res.correct?1:0); award('quizFinal', res.correct?1:0, {ok:res.correct, xp: res.correct?25:0}); logAct(`Final quiz Q${i+1}: ${res.correct?'correct':'incorrect'}`);
+    if (Object.keys(S.finalAnswers).length===qs.length && S.earned.quizFinal/qs.length>=0.8) unlock('boss'); const y=window.scrollY; renderFinal(); window.scrollTo(0,y); }));
+  const done = answered===qs.length;
+  $('#postLikWrap').classList.toggle('hidden', !done);
+  if (done && !$('#likPost').children.length) emojiRows($('#likPost'), S.post);
+}
+function renderDebrief(){
+  const evPossible = U.patients.reduce((a,p)=>a+p.events.length*3,0);
+  const medPossible = U.patients.reduce((a,p)=>a+p.meds.length*3,0);
+  const asPossible = U.patients.reduce((a,p)=>a+p.assessment.length,0);
+  const qpPossible = U.patients.reduce((a,p)=>a+p.quiz.length,0);
+  const cats = [
+    ['Changes in condition', S.earned.events, evPossible],
+    ['Medication safety', S.earned.meds, medPossible],
+    ['Assessment accuracy', S.earned.assess, asPossible],
+    ['Shift prep challenge', S.earned.quest, S.questScoreMax],
+    ['Lab interpretation', S.earned.labs, U.patients.reduce((a,p)=>a+p.labs.length,0)],
+    ['Case studies', S.earned.cases, U.cases.reduce((a,c)=>a+c.stages.length,0)],
+    ['Priority calls', S.earned.prio, U.priorityEvents.reduce((a,e)=>a+e.items.length,0)],
+    ['Patient quizzes', S.earned.quizPt, qpPossible],
+    ['Final quiz', S.earned.quizFinal, U.finalQuiz.length],
+    ['SBAR communication', S.earned.comm, S.possibleComm],
+  ];
+  const tE=cats.reduce((a,c)=>a+c[1],0), tP=cats.reduce((a,c)=>a+c[2],0);
+  const pct = tP ? tE/tP : 0; const stars = pct>=0.85?3:pct>=0.65?2:pct>=0.4?1:0;
+  $('#dbStars').innerHTML = [0,1,2].map(i=>`<span class="${i<stars?'':'off'}">⭐</span>`).join('');
+  $('#dbLevel').textContent = `${LEVELS[levelOf(S.xp)][1]} · ${S.xp} XP`;
+  $('#dbSub').textContent = `${U.unit.name} · ${U.lectureTitle} · Overall ${Math.round(pct*100)}% (${Math.round(tE)}/${tP} points) · ${S.timed?'⏱ Timed':'🧘 Untimed'} · Best streak ${S.bestStreak} · ${Object.keys(S.badges).length}/${BADGES.length} badges`;
+  $('#dbBadges').innerHTML = badgeTiles();
+  $('#dbSkills').innerHTML = Object.entries(SKILLS).map(([k,m])=>{ const sk=S.skills[k]; const pc = sk.p ? Math.round(sk.e/sk.p*100) : null;
+    const verdict = pc==null?'Not tested yet':pc>=85?'Strong':pc>=65?'Developing':'Needs work';
+    return `<div class="card scorebox" style="box-shadow:none"><div style="font-size:24px">${m.ico}</div><div style="font-weight:800">${m.name}</div><div class="big">${pc==null?'—':pc+'%'}</div><div class="small muted">${verdict} · ${Math.round(sk.e*10)/10} of ${sk.p} items</div><div class="meter"><div style="width:${pc||0}%;background:${pc!=null&&pc<65?'var(--red)':pc!=null&&pc<85?'var(--amber)':'var(--teal)'}"></div></div></div>`; }).join('');
+  setTimeout(()=>{ lastPt={x:innerWidth/2,y:200}; if (stars) confetti(60*stars); }, 400);
+  $('#dbScores').innerHTML = cats.map(([l,e,p])=>`<div class="card scorebox"><div class="small muted">${l}</div><div class="big">${p?Math.round(e/p*100)+'%':'—'}</div><div class="small muted">${p?`${Math.round(e*10)/10} / ${p}`:'Not attempted'}</div><div class="meter"><div style="width:${p?Math.round(e/p*100):0}%;background:${p&&e/p<0.6?'var(--red)':p&&e/p<0.8?'var(--amber)':'var(--teal)'}"></div></div></div>`).join('');
+  $('#dbConf').innerHTML = U.objectives.map((o,i)=>{ const a=S.pre.conf[i]||0, b=S.post.conf[i]||0; return `<div style="margin-bottom:10px"><div class="small">${esc(o)}</div><div style="display:flex;align-items:center;gap:8px;margin-top:3px"><div class="meter" style="flex:1;margin:0"><div style="width:${a*20}%;background:#f9a8d4"></div></div><span style="font-size:18px">${EMOS[a-1]||'–'}</span><span class="muted">→</span><div class="meter" style="flex:1;margin:0"><div style="width:${b*20}%"></div></div><span style="font-size:18px">${EMOS[b-1]||'–'}</span></div></div>`; }).join('');
+  const missed=[];
+  U.patients.forEach(p=>{ const ps=S.pts[p.id];
+    p.events.forEach(e=>{ const st=ps.events[e.id]; if(!st) missed.push(`Rm ${p.room}: “${e.title}” never fired (shift ended early).`); else if(st.status==='open') missed.push(`Rm ${p.room}: no response to “${e.alert}”.`); else if(!st.correct) missed.push(`Rm ${p.room}: “${e.title}” — priority was: ${e.options.find(o=>o.correct)?.text}`); });
+    p.meds.forEach(m=>{ const st=ps.meds[m.id]; const sh=st?st.shouldHold:(m.allergyConflict||holdMet(p,m)); if(!st) missed.push(`Rm ${p.room}: ${m.name} not documented (should have been ${sh?'held':'given'}).`); else if(!st.ok) missed.push(`Rm ${p.room}: ${m.name} should have been ${sh?'held':'given'}.`); });
+    const un=p.assessment.length-Object.keys(ps.marks).length; if(un) missed.push(`Rm ${p.room}: ${un} body system${un>1?'s':''} not assessed.`);
+    const lc=S.labCalls[p.id]||{}; p.labs.forEach((l,i)=>{ const c=lc[i]; const t={L:'low',N:'normal',H:'high',C:'critical'}[labTruth(l)]; if(!c) missed.push(`Rm ${p.room}: ${l.name} ${l.value} not interpreted (it's ${t}; ref ${l.range}).`); else if(!c.ok) missed.push(`Rm ${p.room}: ${l.name} ${l.value} ${l.unit} is ${t} (ref ${l.range}).`); });
+  });
+  U.cases.forEach(c=>{ const a=S.cases[c.id]?.answers||{}; c.stages.forEach((st,i)=>{ if(!a[i]) missed.push(`Case "${c.title}" stage ${i+1} not done.`); else if(!a[i].correct) missed.push(`Case "${c.title}" stage ${i+1} (${st.question.slideRef||'review'}): ${st.question.stem.slice(0,90)}${st.question.stem.length>90?'…':''}`); }); });
+  U.priorityEvents.forEach(e=>{ const st=S.prio[e.id]; if(!st) missed.push(`Priority call "${e.alert}" never fired (shift ended early).`); else if(st.status==='open') missed.push(`Priority call "${e.alert}" not answered.`); else if(st.hits<e.items.length) missed.push(`Priority call "${e.alert}": best order was ${e.answer.map(i=>e.items[i]).join(' → ')}.`); });
+  U.finalQuiz.forEach((q,i)=>{ if(!S.finalAnswers[i]?.correct) missed.push(`Final Q${i+1} (${q.slideRef||'review'}): ${q.stem.slice(0,90)}${q.stem.length>90?'…':''}`); });
+  $('#dbMissed').innerHTML = missed.length?`<ul style="margin:0;padding-left:18px">${missed.map(m=>`<li style="margin:3px 0">${esc(m)}</li>`).join('')}</ul>`:'<div class="fb good">Nothing missed. Excellent shift.</div>';
+  show('s-debrief');
+  $('#dbAI').innerHTML='<span class="spinner"></span> Your clinical instructor is writing feedback…';
+  askText(`You are a warm, direct clinical instructor debriefing a ${U.settings?.learner||'student'} after a simulated shift on ${U.unit.name} based on the lecture "${U.lectureTitle}". Learning objectives: ${U.objectives.join('; ')}.
+Scores: ${cats.map(c=>`${c[0]} ${Math.round(c[1]*10)/10}/${c[2]}`).join(', ')}.
+Confidence (1-5) before → after per objective: ${U.objectives.map((o,i)=>`${S.pre.conf[i]}→${S.post.conf[i]}`).join(', ')}.
+Missed items: ${missed.join(' | ')||'none'}.
+Core skills (earned/possible): ${Object.entries(SKILLS).map(([k,m])=>`${m.name} ${Math.round(S.skills[k].e*10)/10}/${S.skills[k].p}`).join(', ')}.
+Shift mode: ${S.timed?'timed (live clock)':'untimed (self-paced)'}.
+Game stats: ${S.xp} XP, level ${LEVELS[levelOf(S.xp)][1]}, best streak ${S.bestStreak}, badges: ${Object.keys(S.badges).map(id=>BADGES.find(b=>b.id===id).name).join(', ')||'none'}.
+Shift log: ${S.log.slice(-120).join(' | ')}
+
+Write the debrief in plain markdown with these short sections: "#### What went well" (2-3 bullets), "#### Skill by skill" (one bullet each for lab values, critical thinking, prioritization and delegation, saying where they stand and one specific tip), "#### Priorities to work on" (2-3 bullets, specific to what they did), "#### Slides to review" (bullets citing slide numbers from the missed items), "#### One question to reflect on". Under 350 words. Address the student as "you".`,{modelTier:'default'})
+    .then(t=>$('#dbAI').innerHTML=md(t)).catch(e=>$('#dbAI').innerHTML=`<p class="muted">${esc(errMsg(e))} Use the missed items list above to guide your review.</p>`);
+}
+function md(t){
+  const lines=String(t||'').split('\n'); let out='', inList=false;
+  const inline=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\*(.+?)\*/g,'<i>$1</i>');
+  for (const l of lines){
+    if (/^\s*[-*•]\s+/.test(l)){ if(!inList){out+='<ul>';inList=true;} out+='<li>'+inline(l.replace(/^\s*[-*•]\s+/,''))+'</li>'; continue; }
+    if (inList){out+='</ul>';inList=false;}
+    if (/^#{1,6}\s/.test(l)) out+='<h4>'+inline(l.replace(/^#+\s*/,''))+'</h4>';
+    else if (l.trim()) out+='<p>'+inline(l)+'</p>';
+  }
+  if (inList) out+='</ul>'; return out;
+}
+
+/* ============================================================
+   Demo unit (used only when previewing without slides)
+   ============================================================ */
+function demoUnit(){
+  const outline = {
+    lectureTitle:'Demo: Heart Failure & Post-op Care', unit:{name:'4 North — Cardiac Step-Down (Demo)',specialty:'Cardiac',description:'A demo unit so you can explore the simulator. Upload your own slides for a unit built from your lecture.'},
+    objectives:['Recognize signs of fluid volume overload in heart failure','Apply hold parameters before giving cardiac medications','Prioritize care when more than one patient needs you','Communicate a change in condition using SBAR'],
+    priorityEvents:[
+      {atMinute:70,alert:'Three things at once',scenario:'At 08:10 the lab calls with a critical repeat potassium for Mr. Okafor, the UAP says Ms. Reyes needs help to the bathroom, and Mr. Okafor\'s wife asks you to explain his new medication.',items:['Lab on the phone: Rm 412 repeat potassium is 2.8 (critical)','Rm 415 needs help to the bathroom (UAP is with her)','Rm 412\'s wife wants his new medication explained'],answer:[0,1,2],rationale:'Take the critical lab result first: it could mean a life-threatening rhythm. The UAP can safely help Ms. Reyes. Teaching the family is important but can wait.',slideRef:'Demo'},
+      {atMinute:160,alert:'Busy hallway',scenario:'At 09:40 you hear Mr. Okafor\'s tele alarm (HR 48), Ms. Reyes says her pain is 7/10 before PT, and the pharmacy calls to clarify an order.',items:['Rm 412 tele alarm: HR 48','Rm 415 pain 7/10 before PT','Pharmacy calling to clarify an order'],answer:[0,1,2],rationale:'Possible symptomatic bradycardia comes first (circulation). Pain is next: it\'s real and time-sensitive before PT. The pharmacy call can wait a few minutes.',slideRef:'Demo'}
+    ],
+    priority:{order:['412','415'],rationale:'Mr. Okafor has a breathing problem (SpO₂ 91%, crackles, RR 22) and a digoxin dose that needs checking. Ms. Reyes is stable with pain, so she comes second.'},
+    questionnaire:[
+      {type:'mcq',skill:'critical',stem:'What is the most important focused assessment for Mr. Okafor at the start of the shift?',options:['Lung sounds, work of breathing and SpO₂','Bowel sounds and last bowel movement','Skin turgor on the forearm','Pupil size and reaction'],answer:[0],rationale:'He has worsening heart failure with crackles and low SpO₂. Breathing comes first.',slideRef:'Demo'},
+      {type:'sata',skill:'labs',stem:'Which are medication safety concerns on this assignment? Select all that apply.',options:['Digoxin with a heart rate of 58','Potassium of 3.2 with digoxin and furosemide','Morphine ordered for a patient allergic to morphine','Acetaminophen 1 g for Ms. Reyes'],answer:[0,1,2],rationale:'Bradycardia and low potassium raise digoxin risk, and a morphine order for a morphine-allergic patient must be clarified.',slideRef:'Demo'},
+      {type:'mcq',skill:'priority',stem:'Mr. Okafor gained 1.2 kg overnight. What do you do with this finding?',options:['Report it to the provider with lung and edema findings','Recheck the weight tomorrow','Encourage more oral fluids','Nothing, it is within normal variation'],answer:[0],rationale:'A gain over 1 kg in a day suggests fluid retention in heart failure and should be reported.',slideRef:'Demo'},
+      {type:'mcq',skill:'delegation',stem:'Which task for Mr. Okafor can you hand to the UAP?',options:['Weigh him at 0600 on the same scale and report the result','Listen to his lung sounds','Teach him about his fluid restriction','Decide whether to hold his digoxin'],answer:[0],rationale:'Daily weight on a stable patient is a UAP task. Assessment, teaching and medication judgment stay with the RN.',slideRef:'Demo'}
+    ],
+    finalQuiz:[
+      {type:'mcq',skill:'critical',stem:'A 68-year-old client with heart failure is on day 2 of IV furosemide. This morning they weigh 1.4 kg more than yesterday, have new crackles in both bases and an SpO₂ of 92% on 2 L. Which action should the nurse take first?',options:['Raise the head of the bed to high Fowler\'s and assess work of breathing','Call the provider to request a higher furosemide dose','Restrict the client\'s fluids to 1 L for the day','Document the weight and recheck it tomorrow'],answer:[0],rationale:'Breathing comes first: positioning improves oxygenation right away and a focused respiratory assessment gives the data the provider will need. Calling the provider is next, not first. Fluid limits need an order, and documenting alone ignores a worsening client.',slideRef:'Demo'},
+      {type:'sata',skill:'critical',stem:'A client taking digoxin 0.25 mg daily says, "I\'ve felt sick to my stomach and the lights look yellow." HR 52, BP 128/76, K⁺ 3.1 mEq/L, digoxin level 2.4 ng/mL. Which findings need follow-up? Select all that apply.',options:['Nausea','Yellow-tinted vision','Heart rate 52','Potassium 3.1 mEq/L','Digoxin level 2.4 ng/mL','Blood pressure 128/76'],answer:[0,1,2,3,4],rationale:'GI upset, visual changes and bradycardia are classic toxicity cues. A level above 2.0 is toxic, and low potassium makes toxicity more likely. The BP is within normal limits.',slideRef:'Demo'},
+      {type:'mcq',skill:'critical',stem:'The nurse taught a client with heart failure how to monitor their weight at home. Which statement shows the teaching worked?',options:['"I\'ll weigh myself every morning after I urinate and call if I gain more than 2 pounds in a day or 5 in a week."','"I\'ll weigh myself once a week, after dinner, so it\'s consistent."','"If my ankles swell I\'ll skip my water pills so I don\'t get dehydrated."','"I only need to call if I feel short of breath."'],answer:[0],rationale:'Same time, same conditions, and clear thresholds to call. Weekly weights miss rapid fluid gain, skipping diuretics worsens overload, and waiting for dyspnea means fluid has already built up.',slideRef:'Demo'},
+      {type:'mcq',skill:'labs',stem:'A client on IV furosemide 40 mg BID complains of leg cramps. Morning K⁺ is 2.9 mEq/L and the monitor shows new U waves. Furosemide and oral KCl 20 mEq are due now. What should the nurse do?',options:['Hold the furosemide and notify the provider of the potassium and rhythm changes','Give both medications as scheduled','Give the furosemide and double the KCl dose','Hold the KCl because the client has cramps'],answer:[0],rationale:'K⁺ 2.9 with U waves is significant hypokalemia with ECG changes. Another loop diuretic dose would drop it further, so hold and get orders (likely IV replacement). The nurse can\'t change a dose on their own.',slideRef:'Demo'},
+      {type:'sata',skill:'labs',stem:'The nurse reviews morning results for five clients. Which need the provider notified right away? Select all that apply.',options:['K⁺ 6.2 mEq/L in a client with kidney failure whose ECG shows peaked T waves','Hemoglobin 6.9 g/dL in a post-op client who feels dizzy standing','BNP 900 pg/mL in a client admitted yesterday for HF who is breathing more easily','Sodium 139 mEq/L in a client on IV fluids','INR 4.8 in a client on warfarin whose gums are bleeding'],answer:[0,1,4],rationale:'Hyperkalemia with ECG changes, symptomatic anemia and a high INR with bleeding are all urgent. A high BNP in an improving HF client is expected and trended. Sodium 139 is normal.',slideRef:'Demo'},
+      {type:'mcq',skill:'labs',stem:'A client on post-op day 3 receives enoxaparin daily. Platelets were 240,000 before surgery and are 95,000 today. The next dose is due. What is the best action?',options:['Hold the enoxaparin and notify the provider','Give the dose and recheck platelets tomorrow','Give the dose into the thigh instead of the abdomen','Apply pressure to injection sites for 5 minutes'],answer:[0],rationale:'A drop of more than 50% suggests heparin-induced thrombocytopenia. Hold the drug and notify the provider. Changing the site or applying pressure doesn\'t address the risk.',slideRef:'Demo'},
+      {type:'mcq',skill:'priority',stem:'After report, the nurse has four clients. Which should be seen first?',options:['A client with HF who has new crackles and an SpO₂ of 88%','A post-op client with pain 6/10 who is due for a PRN','A client with diabetes whose pre-breakfast glucose is 190 mg/dL','A client asking when they can go home'],answer:[0],rationale:'A breathing problem with low oxygen is an acute, actual threat (ABCs). Pain and a high glucose matter but are stable for the next few minutes; discharge questions can wait.',slideRef:'Demo'},
+      {type:'mcq',skill:'priority',stem:'A client who had a total knee replacement yesterday reports new pain in the right calf. The calf is warm, red and 3 cm larger than the left. The client is not short of breath. What should the nurse do first?',options:['Keep the client in bed and notify the provider','Massage the calf to ease the cramp','Walk the client in the hall as ordered','Apply a warm pack and reassess in 2 hours'],answer:[0],rationale:'These are DVT cues. Limiting movement lowers embolism risk while you get orders (likely a duplex ultrasound). Massage and walking could dislodge a clot; waiting delays care.',slideRef:'Demo'},
+      {type:'order',skill:'priority',stem:'A client with heart failure suddenly becomes very short of breath with SpO₂ 84% and pink, frothy sputum. Put the nurse\'s actions in order.',options:['Raise the head of the bed to high Fowler\'s','Increase oxygen per protocol','Call the rapid response team','Give IV furosemide as ordered','Document the event and the client\'s response'],answer:[0,1,2,3,4],rationale:'Position and oxygen are immediate independent actions. Get help next, then give the ordered treatment, then document.',slideRef:'Demo'},
+      {type:'mcq',skill:'delegation',stem:'The nurse is working with a UAP. Which task is appropriate to give the UAP?',options:['Walk a post-op day 2 client who walked twice yesterday without problems','Take the first set of vital signs on a client just back from cardiac catheterization','Feed lunch to a client with a new stroke and a swallowing problem','Teach a client how to use an incentive spirometer'],answer:[0],rationale:'Walking a stable client with a predictable response is within UAP scope. A just-returned procedure client is unstable, a new swallowing problem needs licensed assessment, and teaching belongs to the RN.',slideRef:'Demo'},
+      {type:'sata',skill:'delegation',stem:'The charge nurse is making assignments for an LPN. Which clients are appropriate for the LPN? Select all that apply.',options:['A stable post-op day 2 client who needs scheduled oral meds','A client with a stable chronic wound who needs a dressing change','A client admitted 30 minutes ago who needs an admission assessment','A client with new heart failure who needs discharge teaching for the first time','A client whose blood transfusion started 5 minutes ago'],answer:[0,1],rationale:'LPNs care for stable clients with predictable outcomes: routine meds and simple dressing changes. Admission assessment, first-time teaching and the first minutes of a transfusion stay with the RN.',slideRef:'Demo'},
+      {type:'mcq',skill:'delegation',stem:'A UAP reports that a client on digoxin has a pulse of 48 and says "I feel dizzy." What should the RN do?',options:['Go and assess the client right away','Ask the UAP to recheck the pulse in an hour','Document the finding and continue with the med pass','Ask the UAP to help the client walk to the bathroom'],answer:[0],rationale:'The RN stays accountable for data a UAP collects. A slow pulse with dizziness in a client on digoxin needs RN assessment now.',slideRef:'Demo'}
+    ],
+    cases:[
+      {title:'The Breathless Grandfather',patient:'Walter Kim, 76 M · Emergency department → step-down unit',presentation:'Mr. Kim comes to the ED with 4 days of worsening shortness of breath. He now sleeps sitting in a recliner and has gained 3 kg in a week after running out of his heart medicines. HR 112 irregular, BP 168/94, RR 28, SpO₂ 88% on room air. Crackles halfway up both lungs and 3+ pitting edema to the knees.',
+       stages:[
+        {time:'On arrival',update:'BNP 2,100 pg/mL, K⁺ 4.0 mEq/L, creatinine 1.3 mg/dL. Chest x-ray shows pulmonary congestion. Orders: O₂ to keep SpO₂ ≥ 92%, furosemide 40 mg IV now, telemetry.',question:{type:'mcq',skill:'priority',stem:'Mr. Kim is gasping and anxious. Which action should the nurse take first?',options:['Sit him upright with legs dependent and start oxygen','Give the IV furosemide','Draw blood for repeat labs','Place an indwelling urinary catheter for strict output'],answer:[0],rationale:'Positioning and oxygen improve oxygenation within minutes and come before the diuretic, which takes time to work. Labs and a catheter don\'t treat hypoxia.',slideRef:'Demo'}},
+        {time:'2 hours later',update:'He has put out 1,400 mL of urine and breathes more easily (SpO₂ 94% on 3 L). He now complains of leg cramps. Repeat K⁺ is 3.2 mEq/L and the monitor shows frequent PVCs.',question:{type:'mcq',skill:'labs',stem:'What should the nurse do with these results?',options:['Notify the provider and anticipate a potassium replacement order','Encourage him to drink orange juice and recheck tomorrow','Give a second dose of furosemide to keep him diuresing','Stop the telemetry since he is breathing better'],answer:[0],rationale:'Diuresis lowered his potassium, and PVCs show cardiac irritability. He needs replacement by order and continued monitoring. Diet alone is too slow, more diuretic worsens it, and stopping tele removes the warning system.',slideRef:'Demo'}},
+        {time:'Day 2 · step-down unit',update:'He is stable on 2 L. You have a UAP and an LPN on your team today. His plan includes daily weights, strict I&O, a 2 g sodium diet and new teaching about his medicines.',question:{type:'sata',skill:'delegation',stem:'Which tasks for Mr. Kim can the nurse delegate to the UAP? Select all that apply.',options:['Weigh him at 0600 on the same scale','Measure and record his intake and output','Assess his lung sounds','Teach him about his new medicines','Help him with his bath'],answer:[0,1,4],rationale:'Weights, I&O and hygiene on a stable client are UAP tasks. Assessment and teaching stay with the RN.',slideRef:'Demo'}},
+        {time:'Discharge day',update:'Mr. Kim goes home on furosemide, lisinopril and carvedilol. His daughter will help him. You finish discharge teaching.',question:{type:'sata',skill:'critical',stem:'Which statements by Mr. Kim show he understood the teaching? Select all that apply.',options:['"I\'ll weigh myself every morning before breakfast and write it down."','"I\'ll call if I gain 2 pounds in a day or 5 in a week."','"I can use salt substitute as much as I want."','"If I\'m going out, I\'ll skip my water pill that day."','"If I need more pillows to sleep, I\'ll call my doctor."'],answer:[0,1,4],rationale:'Daily weights, clear call thresholds and noticing orthopnea are correct. Most salt substitutes are potassium chloride and can be dangerous with ACE inhibitors; skipping diuretics invites another admission.',slideRef:'Demo'}}
+       ],takeaway:'In acute heart failure, oxygenate and position first, then treat the cause. Diuresis fixes the fluid but costs potassium, so watch labs and the monitor. Success at home depends on daily weights and knowing when to call.',slideRef:'Demo'},
+      {title:'Post-op Day 2 Surprise',patient:'Rosa Martinez, 64 F · Orthopedic unit, after a right hip replacement',presentation:'Ms. Martinez had a right total hip replacement 2 days ago. She takes enoxaparin 40 mg daily for DVT prevention. Yesterday her vitals were stable (HR 84, BP 134/80) and she walked to the door with PT.',
+       stages:[
+        {time:'Day 2 · 07:00',update:'She feels dizzy when she sits on the edge of the bed. HR 104, BP 102/60. The hip dressing is saturated with bright red blood. This morning\'s hemoglobin is 7.4 g/dL (9.8 yesterday).',question:{type:'mcq',skill:'labs',stem:'Which action should the nurse take first?',options:['Return her to bed, reinforce the dressing and notify the provider','Help her to the chair as planned for PT','Give her 500 mL of oral fluids and recheck in an hour','Give the scheduled enoxaparin to prevent a clot'],answer:[0],rationale:'A 2.4 g/dL hemoglobin drop with tachycardia, low BP and a soaked dressing suggests bleeding. Keep her safe from falls, control bleeding and get orders (likely a transfusion). Giving an anticoagulant now would be dangerous.',slideRef:'Demo'}},
+        {time:'1 hour later',update:'The provider orders 1 unit of packed red blood cells. Fifteen minutes into the transfusion she has chills and low back pain. Temp 101.4°F (was 98.8°F), HR 118, BP 96/58.',question:{type:'mcq',skill:'priority',stem:'What is the nurse\'s first action?',options:['Stop the transfusion and keep the IV open with normal saline on new tubing','Slow the transfusion rate and give acetaminophen','Finish the unit quickly since she needs the blood','Recheck her vital signs in 15 minutes'],answer:[0],rationale:'Fever, chills, back pain and hypotension early in a transfusion suggest an acute hemolytic reaction. Stop the blood right away and keep IV access with saline on new tubing, then notify the provider and blood bank.',slideRef:'Demo'}},
+        {time:'Day 4',update:'She is stable again. Her platelets are 88,000 (230,000 before surgery). She has new swelling and tenderness in her left calf. Enoxaparin is due.',question:{type:'mcq',skill:'labs',stem:'What should the nurse do?',options:['Hold the enoxaparin and notify the provider of the platelet drop and calf findings','Give the enoxaparin because she now has a clot','Apply a warm compress and elevate the left leg','Ask the UAP to help her walk to improve circulation'],answer:[0],rationale:'A platelet drop of more than 50% plus a new clot raises concern for heparin-induced thrombocytopenia. More enoxaparin could make it worse; the provider needs to switch anticoagulants. Walking with a suspected DVT is unsafe.',slideRef:'Demo'}},
+        {time:'Day 4 · afternoon',update:'She suddenly says, "I can\'t breathe, and it hurts when I take a breath." SpO₂ 86%, HR 124, RR 30. She is anxious and restless.',question:{type:'mcq',skill:'critical',stem:'Which response is best?',options:['Stay with her, raise the head of the bed, start oxygen and call the rapid response team','Leave to get the provider in person','Give her a PRN anxiety medicine and reassess in 30 minutes','Encourage slow breathing and recheck vitals in an hour'],answer:[0],rationale:'Sudden dyspnea, pleuritic pain, hypoxia and tachycardia after a DVT point to pulmonary embolism. Stay with her, support oxygenation and bring help to the bedside. Treating anxiety alone would miss a life-threatening problem.',slideRef:'Demo'}}
+       ],takeaway:'Post-op clients can change fast: watch the trend, not just one number. Bleeding, transfusion reactions, HIT and PE each have early cues. Recognizing them and acting first on airway, breathing and circulation saves lives.',slideRef:'Demo'}
+    ],
+    patients:[
+      {room:'412',name:'Samuel Okafor',age:72,sex:'M',diagnosis:'Acute decompensated heart failure (HFrEF, EF 25%)',focus:'Fluid overload, diuretics, digoxin hold parameters, hypokalemia',slideRefs:'Demo',acuity:3},
+      {room:'415',name:'Elena Reyes',age:58,sex:'F',diagnosis:'Post-op day 1, right total knee arthroplasty',focus:'Post-op assessment, pain management, VTE prevention',slideRefs:'Demo',acuity:2}
+    ]
+  };
+  const d1 = {mrn:'4471902',weightKg:94,hospitalDay:2,codeStatus:'Full Code',allergies:[],isolation:'None',attending:'Dr. Priya Nand, Cardiology',
+    hpi:'72-year-old man with HFrEF admitted yesterday for 3 days of worsening shortness of breath, orthopnea (sleeps on 3 pillows) and a 4 kg weight gain after running out of furosemide. Given IV furosemide in the ED with modest response.',
+    pmh:['HFrEF (EF 25%)','Hypertension','Type 2 diabetes','Atrial fibrillation'],socialHx:'Retired bus driver, lives with wife, former smoker (40 pack-years).',
+    sbar:{situation:'Mr. Okafor in 412 is day 2 for decompensated heart failure. He was more short of breath overnight.',background:'HFrEF EF 25%, AFib, diabetes. Ran out of his furosemide at home. Weight up 4 kg.',assessment:'Crackles in both bases, worse than yesterday. SpO₂ 91–92% on 2 L. 2+ pitting edema to the knees. Net only −300 mL overnight. K⁺ 3.2 this morning.',recommendation:'Watch his breathing closely. Digoxin and furosemide due at 0800, so check his potassium and apical pulse first. Daily weight is done: 1.2 kg up from yesterday.'},
+    vitals:[{time:'2300',hr:88,sbp:142,dbp:84,rr:20,temp:98.2,spo2:93,pain:0},{time:'0300',hr:92,sbp:138,dbp:80,rr:22,temp:98.4,spo2:92,pain:0},{time:'0645',hr:58,sbp:134,dbp:78,rr:22,temp:98.3,spo2:91,pain:1}],
+    rhythm:'Atrial Fibrillation',
+    assessment:[{system:'Neuro',finding:'Alert, oriented ×4, follows commands',abnormal:false},{system:'Cardiovascular',finding:'Irregularly irregular apical pulse 58, JVD to angle of jaw at 45°, 2+ pitting edema bilateral lower legs',abnormal:true},{system:'Respiratory',finding:'Fine crackles bilateral lower lobes, RR 22, mildly labored, speaks in full sentences',abnormal:true},{system:'GI',finding:'Abdomen soft, non-tender, bowel sounds ×4, mild nausea, ate 25% of dinner',abnormal:true},{system:'GU',finding:'Voiding clear yellow urine, 900 mL out overnight',abnormal:false},{system:'Integumentary',finding:'Skin warm, dry, intact; heels without redness',abnormal:false},{system:'Musculoskeletal',finding:'Moves all extremities, generalized weakness',abnormal:false},{system:'Psychosocial',finding:'Anxious about breathing, asks whether he will "drown"',abnormal:true}],
+    labs:[{name:'Sodium',value:'133',unit:'mEq/L',range:'135-145',flag:'L'},{name:'Potassium',value:'3.2',unit:'mEq/L',range:'3.5-5.0',flag:'L'},{name:'BUN',value:'28',unit:'mg/dL',range:'7-20',flag:'H'},{name:'Creatinine',value:'1.4',unit:'mg/dL',range:'0.6-1.3',flag:'H'},{name:'BNP',value:'1480',unit:'pg/mL',range:'<100',flag:'H'},{name:'Digoxin level',value:'1.9',unit:'ng/mL',range:'0.5-2.0',flag:''},{name:'Glucose',value:'162',unit:'mg/dL',range:'70-110',flag:'H'},{name:'Magnesium',value:'1.7',unit:'mg/dL',range:'1.7-2.2',flag:''}],
+    meds:[{name:'Digoxin (Lanoxin)',dose:'0.125 mg',route:'PO',freq:'daily',due:'0800',indication:'AFib rate control / HF',highAlert:true,holdIf:{param:'hr',op:'<',value:60},allergyConflict:false,rationale:'Apical HR is 58. Hold digoxin and notify the provider. Low K⁺ (3.2) and a level near the top of range also raise toxicity risk.'},
+      {name:'Furosemide (Lasix)',dose:'40 mg',route:'IV push',freq:'BID',due:'0800',indication:'Fluid overload',highAlert:false,holdIf:{param:'sbp',op:'<',value:90},allergyConflict:false,rationale:'BP 134 systolic, so give it. Push over 1–2 minutes, monitor output and K⁺, and expect a potassium replacement order.'},
+      {name:'Potassium chloride ER',dose:'20 mEq',route:'PO',freq:'BID',due:'0900',indication:'Hypokalemia',highAlert:false,holdIf:{param:'lab:Potassium',op:'>',value:5.0},allergyConflict:false,rationale:'K⁺ is 3.2, so give it with food and a full glass of water. Don\'t crush the ER tablet.'},
+      {name:'Lisinopril (Zestril)',dose:'5 mg',route:'PO',freq:'daily',due:'0900',indication:'HF / HTN',highAlert:false,holdIf:{param:'sbp',op:'<',value:100},allergyConflict:false,rationale:'SBP 134, so give it. Watch for hypotension, cough, angioedema and rising K⁺/creatinine.'}],
+    orders:['Telemetry','Strict I&O','Daily weight 0600, same scale','2 g sodium diet, 1.5 L fluid restriction','O₂ via NC to keep SpO₂ ≥ 92%','HOB ≥ 30°','BMP and Mg in AM','Notify for HR < 50 or > 120, SBP < 90, SpO₂ < 90%'],
+    notes:[{time:'0200',author:'Night RN',text:'Pt woke short of breath, sat upright, O₂ increased from 1 L to 2 L NC. SpO₂ 92%. Lungs: crackles bilateral bases.'},{time:'0600',author:'Night RN',text:'Weight 94.0 kg (93.8 yesterday per scale). Pt states "I feel like I can\'t get a deep breath."'}],
+    persona:'Friendly and talkative but scared of being short of breath. Doesn\'t understand why salt matters. Admits he "eats a lot of canned soup."',
+    events:[{atMinute:25,alert:'Call light: "I can\'t breathe lying down"',title:'Worsening dyspnea',description:'Mr. Okafor slid down in bed and is now sitting at 15°, breathing fast, using accessory muscles. Crackles are now heard halfway up both lungs. He says "Help me sit up, I can\'t catch my breath."',vitals:{rr:30,spo2:87,sbp:156,dbp:92},cues:{question:'Which findings are most concerning right now? Select all that apply.',options:['SpO₂ 87%','Crackles halfway up both lungs','Accessory muscle use','Temperature 98.3°F','Pain 1/10','RR 30'],answer:[0,1,2,5],rationale:'Low SpO₂, rising crackles, accessory muscles and tachypnea all point to worsening pulmonary congestion.'},question:'What is your FIRST action?',options:[{text:'Raise the HOB to high Fowler\'s and increase O₂ per protocol',correct:true,feedback:'Positioning and oxygen improve oxygenation immediately. Then call the provider with SBAR.'},{text:'Call the provider before doing anything else',correct:false,feedback:'Call soon, but first take quick independent actions to improve breathing.'},{text:'Give the 0800 furosemide early',correct:false,feedback:'You can\'t change the timing without an order, and it won\'t help fast enough.'},{text:'Obtain a full set of labs',correct:false,feedback:'Labs don\'t treat hypoxia.'}],resolvedVitals:{rr:24,spo2:92},slideRef:'Demo'},
+      {atMinute:140,alert:'Tele: HR 48, irregular',title:'Bradycardia on telemetry',description:'Telemetry alarms for HR 48. Mr. Okafor says he feels "woozy" and is nauseated, and the lights look "a little yellow."',vitals:{hr:48,sbp:108,dbp:64},cues:{question:'Which cues point to digoxin toxicity? Select all that apply.',options:['HR 48','Nausea','Yellow-tinted vision','Potassium 3.2','Crackles in the bases','Digoxin level 1.9'],answer:[0,1,2,3,5],rationale:'Bradycardia, nausea and visual changes are classic. Low K⁺ and a level near the top of range raise the risk. Crackles relate to his HF, not toxicity.'},question:'Which is the priority?',options:[{text:'Assess him, hold digoxin and notify the provider with K⁺ and dig level',correct:true,feedback:'Bradycardia, nausea and yellow vision in a patient on digoxin with low K⁺ suggest toxicity.'},{text:'Give his digoxin so his rate stays controlled',correct:false,feedback:'Digoxin slows the heart further, so it\'s dangerous here.'},{text:'Encourage oral fluids for nausea',correct:false,feedback:'He\'s on a fluid restriction and this misses the cause.'},{text:'Reassure him and recheck in an hour',correct:false,feedback:'Possible toxicity needs action now.'}],resolvedVitals:{hr:56},slideRef:'Demo'}],
+    quiz:[{type:'mcq',stem:'Mr. Okafor\'s apical pulse is 58 before his 0800 digoxin. What do you do?',options:['Give it and recheck in an hour','Hold it and notify the provider','Give half the dose','Ask him to take it with food'],answer:[1],rationale:'Hold digoxin when the apical HR is under 60 (per the order) and notify the provider.',slideRef:'Demo'},{type:'sata',stem:'Which findings show fluid overload in Mr. Okafor? Select all.',options:['Crackles in the lung bases','JVD','Weight up 1.2 kg','Clear yellow urine','2+ pitting edema'],answer:[0,1,2,4],rationale:'Crackles, JVD, weight gain and edema all show fluid excess.',slideRef:'Demo'},{type:'mcq',skill:'labs',stem:'Mr. Okafor\'s K⁺ is 3.2 and his 0800 meds include digoxin and furosemide. What does this lab mean for his care?',options:['Hypokalemia raises digoxin toxicity risk; expect K⁺ replacement and watch the monitor','It is normal, so no action is needed','Hold the potassium supplement','It means he is dehydrated'],answer:[0],rationale:'K⁺ 3.2 is low (3.5–5.0). Low potassium makes digoxin toxicity more likely, and furosemide will lower it further.',slideRef:'Demo'}]};
+  const d2 = {mrn:'5530217',weightKg:81,hospitalDay:2,codeStatus:'Full Code',allergies:['Morphine (hives)'],isolation:'None',attending:'Dr. Mark Lindqvist, Orthopedics',
+    hpi:'58-year-old woman with severe right knee osteoarthritis. Had an elective right total knee arthroplasty yesterday under spinal anesthesia. Uncomplicated surgery, EBL 200 mL.',pmh:['Osteoarthritis','Obesity (BMI 33)','GERD'],socialHx:'Elementary school teacher, lives alone in a 2-story house.',
+    sbar:{situation:'Ms. Reyes in 415 is post-op day 1 after a right total knee.',background:'Osteoarthritis, obesity. Allergic to morphine (hives). On enoxaparin for DVT prevention.',assessment:'Pain 6/10, she\'s been reluctant to use her PCA. Dressing dry and intact. Pedal pulses +2, toes warm. Voided once after the Foley came out at 0400.',recommendation:'PT is coming at 0930, so pre-medicate about 30 minutes before. Get her up to the chair. Watch for a second void.'},
+    vitals:[{time:'2300',hr:84,sbp:128,dbp:76,rr:16,temp:99.1,spo2:96,pain:5},{time:'0300',hr:88,sbp:124,dbp:72,rr:16,temp:99.5,spo2:95,pain:6},{time:'0645',hr:90,sbp:126,dbp:74,rr:18,temp:99.3,spo2:95,pain:6}],rhythm:'NSR',
+    assessment:[{system:'Neuro',finding:'A&O ×4, sensation intact to both feet',abnormal:false},{system:'Cardiovascular',finding:'Regular rate, pedal pulses +2 bilaterally, cap refill < 3 s, right calf soft and non-tender',abnormal:false},{system:'Respiratory',finding:'Diminished bases bilaterally, using incentive spirometer to only 750 mL',abnormal:true},{system:'GI',finding:'Hypoactive bowel sounds, no flatus yet, tolerating clear liquids',abnormal:true},{system:'GU',finding:'Voided 250 mL at 0500, bladder scan 180 mL',abnormal:false},{system:'Integumentary',finding:'Right knee dressing dry and intact, mild swelling',abnormal:false},{system:'Musculoskeletal',finding:'Unable to straight-leg raise yet, CPM tolerated 0–40°',abnormal:true},{system:'Pain',finding:'6/10 aching right knee, worse with movement, grimaces',abnormal:true}],
+    labs:[{name:'Hemoglobin',value:'10.4',unit:'g/dL',range:'12-16',flag:'L'},{name:'Hematocrit',value:'31',unit:'%',range:'36-46',flag:'L'},{name:'Platelets',value:'210',unit:'K/µL',range:'150-400',flag:''},{name:'WBC',value:'10.8',unit:'K/µL',range:'4.5-11',flag:''},{name:'Potassium',value:'4.1',unit:'mEq/L',range:'3.5-5.0',flag:''},{name:'Creatinine',value:'0.8',unit:'mg/dL',range:'0.6-1.1',flag:''}],
+    meds:[{name:'Enoxaparin (Lovenox)',dose:'40 mg',route:'subcut',freq:'daily',due:'0900',indication:'DVT prophylaxis',highAlert:true,holdIf:{param:'lab:Platelets',op:'<',value:100},allergyConflict:false,rationale:'Platelets 210, so give it. Inject into the abdomen, don\'t expel the air bubble, don\'t rub. Watch for bleeding.'},
+      {name:'Morphine',dose:'4 mg',route:'IV',freq:'q4h PRN pain — pre-PT',due:'0900',indication:'Pain before PT',highAlert:true,holdIf:{param:'rr',op:'<',value:12},allergyConflict:true,rationale:'She\'s allergic to morphine (hives). Hold it and clarify with the provider for another analgesic before PT.'},
+      {name:'Acetaminophen (Tylenol)',dose:'1000 mg',route:'PO',freq:'q8h',due:'0800',indication:'Multimodal pain control',highAlert:false,holdIf:null,allergyConflict:false,rationale:'Give it as scheduled. Check her total daily dose stays at or under 3–4 g.'},
+      {name:'Pantoprazole (Protonix)',dose:'40 mg',route:'PO',freq:'daily before breakfast',due:'0730',indication:'GERD',highAlert:false,holdIf:null,allergyConflict:false,rationale:'Give 30–60 minutes before breakfast.'}],
+    orders:['Vitals q4h','Neurovascular checks q2h right leg','CPM 0–60°, advance 10°/day','PT/OT eval and treat','Weight bearing as tolerated with walker','Incentive spirometer 10×/hr while awake','SCDs while in bed','Clear liquids, advance as tolerated','Bladder scan if no void in 6 h'],
+    notes:[{time:'0100',author:'Night RN',text:'Pt states pain 6/10, declined to push PCA, "I don\'t want to get addicted." Educated on pain control and recovery.'},{time:'0400',author:'Night RN',text:'Foley removed per protocol. Pt aware she needs to void within 6 h.'}],
+    persona:'Independent, practical, a bit stoic. Worried about addiction to pain meds and about stairs at home since she lives alone.',
+    events:[{atMinute:90,alert:'Call light: "My leg feels different"',title:'Calf pain',description:'Ms. Reyes reports new cramping pain in her right calf. The calf is warm, red and more swollen than the left. She is not short of breath.',vitals:{hr:98},cues:{question:'Which findings suggest a DVT? Select all that apply.',options:['Unilateral calf pain','Warmth and redness of the calf','Calf more swollen than the other side','No shortness of breath','Post-op day 1 after knee replacement'],answer:[0,1,2,4],rationale:'One-sided pain, warmth, redness and swelling after orthopedic surgery are classic DVT cues. Absence of dyspnea is reassuring for PE but doesn\'t rule out DVT.'},question:'What is the most appropriate action?',options:[{text:'Keep her in bed, don\'t massage the leg, and notify the provider',correct:true,feedback:'Suspected DVT: avoid massage (risk of embolism), keep her still and get orders, likely a venous duplex scan.'},{text:'Massage the calf to relieve the cramp',correct:false,feedback:'Massage can dislodge a clot.'},{text:'Walk her in the hallway to improve circulation',correct:false,feedback:'Activity should wait until DVT is ruled out.'},{text:'Apply an ice pack and reassess in 2 hours',correct:false,feedback:'This delays evaluation of a possible DVT.'}],resolvedVitals:{hr:90},slideRef:'Demo'}],
+    quiz:[{type:'mcq',stem:'Ms. Reyes has a morphine PRN ordered before PT. What is the best action?',options:['Give it, since the hives were minor','Hold it and contact the provider for an alternative','Give half the dose','Give diphenhydramine first, then the morphine'],answer:[1],rationale:'A documented allergy means you hold the drug and clarify the order before giving it.',slideRef:'Demo'},{type:'mcq',skill:'labs',stem:'Ms. Reyes\'s Hgb is 10.4 g/dL the day after surgery. What is the best interpretation?',options:['Low, expected after surgery; monitor for bleeding and dizziness when she stands','Critical, give blood now','Normal for a woman','High, encourage fluids'],answer:[0],rationale:'Normal for women is about 12–16 g/dL. A mild drop after joint replacement is common; watch for bleeding and orthostatic symptoms, and trend it.',slideRef:'Demo'},{type:'mcq',skill:'delegation',stem:'Which task for Ms. Reyes can go to the UAP?',options:['Help her walk to the chair with her walker','Check her neurovascular status','Give her enoxaparin injection','Evaluate her pain after medication'],answer:[0],rationale:'Ambulation for a stable patient is within UAP scope. Assessment, injections and evaluation stay with licensed nurses.',slideRef:'Demo'}]};
+  return {lectureTitle:outline.lectureTitle, unit:outline.unit, objectives:outline.objectives, questionnaire:outline.questionnaire.map(normQ), priority:outline.priority, cases:outline.cases, priorityEvents:outline.priorityEvents, finalQuiz:outline.finalQuiz.map(normQ), patients:[normPatient(outline.patients[0],d1,0), normPatient(outline.patients[1],d2,1)], settings:{learner:'nursing student in a med-surg clinical rotation',role:'RN'}, fromSlides:false};
+}
+
+/* ============================================================
+   Wiring
+   ============================================================ */
+const drop=$('#drop');
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',e=>addFiles([...e.dataTransfer.files]));
+$('#fileInput').onchange=e=>{ addFiles([...e.target.files]); e.target.value=''; };
+$('#pasteText').oninput=updateBuild;
+$('#buildBtn').onclick=buildUnit;
+$('#genBack').onclick=()=>show('s-upload');
+const demo=e=>{ e.preventDefault(); startWithUnit(demoUnit()); };
+$('#demoLink').onclick=demo; $('#demoLink2').onclick=demo;
+$('#toQuestionnaire').onclick=()=>{ if(!$('#likPre').children.length) renderQuestionnaire(); show('s-quest'); };
+applyPhotos();
+$('#reviewHandoff').onclick=()=>show('s-handoff');
+$('#rankLock').onclick=lockRank;
+$('#accessCode').oninput=e=>{ try{ sessionStorage.setItem('accessCode', e.target.value.trim()); }catch(_){} };
+$('#hud').onclick=()=>{ if(S) showBadges(); };
+$('#startShift').onclick=startShift;
+$('#caseBack').onclick=()=>{ show('s-unit'); renderUnit(); };
+$('#backToUnit').onclick=()=>{ stopMonitor(); show('s-unit'); renderUnit(); };
+$('#speed').onclick=e=>{ const b=e.target.closest('button'); if(b) setSpeed(+b.dataset.s); };
+$('#muteBtn').onclick=()=>{ S.muted=!S.muted; $('#muteBtn').textContent=S.muted?'🔕':'🔔'; };
+$('#paceBtn').onclick=()=>{ S.timed=!S.timed; logAct(`Switched to ${S.timed?'timed':'untimed'} mode`); toastGood(S.timed?'<b>⏱ Timed mode.</b> The clock runs on its own and fast responses earn bonus points.':'<b>🧘 Untimed mode.</b> The clock only moves when you act. Use "Skip" to jump to the next event.'); applyPace(); };
+$('#skipBtn').onclick=skipAhead;
+$('#endShiftBtn').onclick=()=>endShiftPrompt(false);
+$('#toDebrief').onclick=()=>{ if(U.objectives.some((_,i)=>S.post.conf[i]==null)){ alertInline(); return; } renderDebrief(); };
+function alertInline(){ const w=$('#postLikWrap'); if(!w.querySelector('.fb')) w.insertAdjacentHTML('beforeend','<div class="fb bad">Rate each objective first.</div>'); }
+$('#newUnit').onclick=()=>{ files.length=0; renderFiles(); $('#pasteText').value=''; $('#brandName').textContent='Clinical Unit Simulator'; U=null; S=null; $('#hud').classList.add('hidden'); clearInterval(flashTimer); show('s-upload'); };
+
+getSample().then(s=>{ if(!s){ noClaude=true; $('#noClaude').classList.remove('hidden'); } updateBuild(); });
+</script>
+</body>
+</html>
